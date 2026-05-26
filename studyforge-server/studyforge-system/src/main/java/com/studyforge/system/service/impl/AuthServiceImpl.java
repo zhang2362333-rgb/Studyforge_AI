@@ -19,6 +19,9 @@ import java.security.NoSuchAlgorithmException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HexFormat;
+import java.util.Locale;
+import java.util.regex.Pattern;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +29,10 @@ import org.springframework.transaction.annotation.Transactional;
 public class AuthServiceImpl implements AuthService {
     private static final String TOKEN_PREFIX = "Bearer ";
     private static final int DAILY_LOGIN_EXPERIENCE = 15;
+    private static final Pattern USERNAME_PATTERN = Pattern.compile("^[A-Za-z0-9_]{3,24}$");
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
+    private static final int MIN_PASSWORD_LENGTH = 8;
+    private static final int MAX_PASSWORD_LENGTH = 64;
 
     private final UserMapper userMapper;
     private final UserExperienceMapper userExperienceMapper;
@@ -79,22 +86,33 @@ public class AuthServiceImpl implements AuthService {
         if (request == null || isBlank(request.username()) || isBlank(request.email()) || isBlank(request.password())) {
             throw new BizException(ErrorCode.VALIDATION_ERROR, "username, email and password are required");
         }
-        if (userMapper.selectByAccount(request.username().trim()) != null || userMapper.selectByAccount(request.email().trim()) != null) {
+
+        String username = request.username().trim();
+        String email = request.email().trim().toLowerCase(Locale.ROOT);
+        validateUsername(username);
+        validateEmail(email);
+        validatePassword(request.password());
+
+        if (userMapper.selectByAccount(username) != null || userMapper.selectByAccount(email) != null) {
             throw new BizException(ErrorCode.VALIDATION_ERROR, "account already exists");
         }
 
         User user = new User();
-        user.setUsername(request.username().trim());
-        user.setEmail(request.email().trim());
+        user.setUsername(username);
+        user.setEmail(email);
         user.setPasswordHash(hashPassword(request.password()));
         user.setRole(RoleType.USER);
         user.setStatus(UserStatus.ACTIVE);
-        user.setDisplayName(request.username().trim());
-        user.setBio("刚加入 StudyForge AI，正在整理自己的学习路径。");
+        user.setDisplayName(username);
+        user.setBio("正在用 StudyForge AI 整理学习内容。");
         user.setCommunityLevel(1);
         user.setExperiencePoints(0);
         user.setReputationScore(0);
-        userMapper.insert(user);
+        try {
+            userMapper.insert(user);
+        } catch (DuplicateKeyException exception) {
+            throw new BizException(ErrorCode.VALIDATION_ERROR, "account already exists");
+        }
         return user.getUserId();
     }
 
@@ -211,6 +229,24 @@ public class AuthServiceImpl implements AuthService {
 
     private boolean isBlank(String value) {
         return value == null || value.isBlank();
+    }
+
+    private void validateUsername(String username) {
+        if (!USERNAME_PATTERN.matcher(username).matches()) {
+            throw new BizException(ErrorCode.VALIDATION_ERROR, "username must be 3-24 characters and only contain letters, numbers, or underscores");
+        }
+    }
+
+    private void validateEmail(String email) {
+        if (email.length() > 100 || !EMAIL_PATTERN.matcher(email).matches()) {
+            throw new BizException(ErrorCode.VALIDATION_ERROR, "email format is invalid");
+        }
+    }
+
+    private void validatePassword(String password) {
+        if (password.length() < MIN_PASSWORD_LENGTH || password.length() > MAX_PASSWORD_LENGTH) {
+            throw new BizException(ErrorCode.VALIDATION_ERROR, "password must be 8-64 characters");
+        }
     }
 
     private String displayName(User user) {

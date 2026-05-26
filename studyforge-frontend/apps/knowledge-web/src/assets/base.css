@@ -2386,6 +2386,34 @@ meter::-webkit-meter-optimum-value {
   outline: none;
 }
 
+.auth-hint {
+  margin: -4px 0 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.auth-switch {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.auth-switch button {
+  padding: 0;
+  background: transparent;
+  color: var(--primary);
+  font-weight: 760;
+  cursor: pointer;
+}
+
+.auth-switch button:hover {
+  color: var(--primary-dark);
+}
+
 .form-error {
   margin: 0;
   color: var(--danger);
