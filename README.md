@@ -98,14 +98,27 @@ User-side Vue URL:
 http://localhost:5174
 ```
 
+Start the admin console:
+
+```bash
+./scripts/start_frontend.sh
+```
+
+Admin Vue URL:
+
+```text
+http://localhost:5173
+```
+
 ## Database
 
 For a new database, run the schema first. Import the seed script only when you intentionally want to reset the local demo data:
 
 ```bash
-mysql -u root -p < sql/001_schema.sql
+mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS studyforge_ai CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+mysql -u root -p studyforge_ai < sql/001_schema.sql
 # Warning: this clears local business data before loading demo rows.
-mysql -u root -p < sql/002_seed_data.sql
+mysql -u root -p studyforge_ai < sql/002_seed_data.sql
 ```
 
 On this Linux machine, the available local database account is `lynn` without a password, and it can create `test_*` databases. The local development database has been initialized as:
@@ -141,3 +154,30 @@ The schema uses a main table plus i18n table model for content:
 - `category_i18n`
 
 This keeps the content model extensible beyond fixed `zh/en` columns.
+
+## Deployment
+
+Docker-based server deployment preparation is documented in:
+
+```text
+docs/server-deployment.md
+docs/staging-deployment.md
+```
+
+Staging uses GitHub Actions to build and push Docker images to GHCR, then runs Docker Compose on the server. The default staging web port is:
+
+```text
+7897
+```
+
+The current Docker deployment files are:
+
+```text
+deploy/docker/api.Dockerfile
+deploy/docker/web.Dockerfile
+deploy/docker/migrate.Dockerfile
+deploy/docker/mysql.Dockerfile
+deploy/docker/docker-compose.staging.yml
+scripts/bootstrap_staging_docker_alinux.sh
+scripts/deploy_staging_docker.sh
+```

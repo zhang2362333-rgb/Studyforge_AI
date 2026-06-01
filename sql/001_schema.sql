@@ -1,8 +1,7 @@
-CREATE DATABASE IF NOT EXISTS studyforge_ai
-    DEFAULT CHARACTER SET utf8mb4
-    DEFAULT COLLATE utf8mb4_unicode_ci;
-
-USE studyforge_ai;
+-- Import this schema with an explicit database selected, for example:
+-- mysql -u studyforge -p studyforge_ai < sql/001_schema.sql
+-- Legacy upgrade blocks below use information_schema + prepared DDL instead
+-- of MariaDB-only ALTER TABLE ... ADD COLUMN IF NOT EXISTS syntax.
 
 CREATE TABLE IF NOT EXISTS users (
     user_id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
@@ -26,15 +25,22 @@ CREATE TABLE IF NOT EXISTS users (
     KEY idx_users_role_status (role, status)
 ) ENGINE=InnoDB COMMENT='User account and profile';
 
-ALTER TABLE users
-    ADD COLUMN IF NOT EXISTS display_name VARCHAR(80) NULL AFTER username,
-    ADD COLUMN IF NOT EXISTS bio VARCHAR(300) NULL AFTER status,
-    ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(512) NULL AFTER bio,
-    ADD COLUMN IF NOT EXISTS banner_url VARCHAR(512) NULL AFTER avatar_url,
-    ADD COLUMN IF NOT EXISTS community_level INT UNSIGNED NOT NULL DEFAULT 1 AFTER banner_url,
-    ADD COLUMN IF NOT EXISTS experience_points INT UNSIGNED NOT NULL DEFAULT 0 AFTER community_level,
-    ADD COLUMN IF NOT EXISTS last_login_reward_date DATE NULL AFTER experience_points,
-    ADD COLUMN IF NOT EXISTS reputation_score INT NOT NULL DEFAULT 0 AFTER last_login_reward_date;
+SET @studyforge_add_column_sql = (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `users` ADD COLUMN `display_name` VARCHAR(80) NULL AFTER `username`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'display_name');
+PREPARE studyforge_add_column_stmt FROM @studyforge_add_column_sql; EXECUTE studyforge_add_column_stmt; DEALLOCATE PREPARE studyforge_add_column_stmt;
+SET @studyforge_add_column_sql = (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `users` ADD COLUMN `bio` VARCHAR(300) NULL AFTER `status`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'bio');
+PREPARE studyforge_add_column_stmt FROM @studyforge_add_column_sql; EXECUTE studyforge_add_column_stmt; DEALLOCATE PREPARE studyforge_add_column_stmt;
+SET @studyforge_add_column_sql = (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `users` ADD COLUMN `avatar_url` VARCHAR(512) NULL AFTER `bio`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'avatar_url');
+PREPARE studyforge_add_column_stmt FROM @studyforge_add_column_sql; EXECUTE studyforge_add_column_stmt; DEALLOCATE PREPARE studyforge_add_column_stmt;
+SET @studyforge_add_column_sql = (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `users` ADD COLUMN `banner_url` VARCHAR(512) NULL AFTER `avatar_url`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'banner_url');
+PREPARE studyforge_add_column_stmt FROM @studyforge_add_column_sql; EXECUTE studyforge_add_column_stmt; DEALLOCATE PREPARE studyforge_add_column_stmt;
+SET @studyforge_add_column_sql = (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `users` ADD COLUMN `community_level` INT UNSIGNED NOT NULL DEFAULT 1 AFTER `banner_url`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'community_level');
+PREPARE studyforge_add_column_stmt FROM @studyforge_add_column_sql; EXECUTE studyforge_add_column_stmt; DEALLOCATE PREPARE studyforge_add_column_stmt;
+SET @studyforge_add_column_sql = (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `users` ADD COLUMN `experience_points` INT UNSIGNED NOT NULL DEFAULT 0 AFTER `community_level`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'experience_points');
+PREPARE studyforge_add_column_stmt FROM @studyforge_add_column_sql; EXECUTE studyforge_add_column_stmt; DEALLOCATE PREPARE studyforge_add_column_stmt;
+SET @studyforge_add_column_sql = (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `users` ADD COLUMN `last_login_reward_date` DATE NULL AFTER `experience_points`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'last_login_reward_date');
+PREPARE studyforge_add_column_stmt FROM @studyforge_add_column_sql; EXECUTE studyforge_add_column_stmt; DEALLOCATE PREPARE studyforge_add_column_stmt;
+SET @studyforge_add_column_sql = (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `users` ADD COLUMN `reputation_score` INT NOT NULL DEFAULT 0 AFTER `last_login_reward_date`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'reputation_score');
+PREPARE studyforge_add_column_stmt FROM @studyforge_add_column_sql; EXECUTE studyforge_add_column_stmt; DEALLOCATE PREPARE studyforge_add_column_stmt;
 
 CREATE TABLE IF NOT EXISTS user_tokens (
     token_id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
@@ -173,9 +179,10 @@ CREATE TABLE IF NOT EXISTS posts (
     CONSTRAINT fk_posts_category_id FOREIGN KEY (category_id) REFERENCES categories (category_id)
 ) ENGINE=InnoDB COMMENT='Post aggregate root';
 
-ALTER TABLE posts
-    ADD COLUMN IF NOT EXISTS cover_image_url VARCHAR(512) NULL AFTER status,
-    ADD COLUMN IF NOT EXISTS featured TINYINT(1) NOT NULL DEFAULT 0 AFTER cover_image_url;
+SET @studyforge_add_column_sql = (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `posts` ADD COLUMN `cover_image_url` VARCHAR(512) NULL AFTER `status`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'posts' AND COLUMN_NAME = 'cover_image_url');
+PREPARE studyforge_add_column_stmt FROM @studyforge_add_column_sql; EXECUTE studyforge_add_column_stmt; DEALLOCATE PREPARE studyforge_add_column_stmt;
+SET @studyforge_add_column_sql = (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `posts` ADD COLUMN `featured` TINYINT(1) NOT NULL DEFAULT 0 AFTER `cover_image_url`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'posts' AND COLUMN_NAME = 'featured');
+PREPARE studyforge_add_column_stmt FROM @studyforge_add_column_sql; EXECUTE studyforge_add_column_stmt; DEALLOCATE PREPARE studyforge_add_column_stmt;
 
 CREATE TABLE IF NOT EXISTS post_i18n (
     id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
@@ -195,8 +202,8 @@ CREATE TABLE IF NOT EXISTS post_i18n (
     CONSTRAINT fk_post_i18n_post_id FOREIGN KEY (post_id) REFERENCES posts (post_id) ON DELETE CASCADE
 ) ENGINE=InnoDB COMMENT='Localized post content';
 
-ALTER TABLE post_i18n
-    ADD COLUMN IF NOT EXISTS content_format VARCHAR(20) NOT NULL DEFAULT 'MARKDOWN' AFTER content;
+SET @studyforge_add_column_sql = (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `post_i18n` ADD COLUMN `content_format` VARCHAR(20) NOT NULL DEFAULT ''MARKDOWN'' AFTER `content`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'post_i18n' AND COLUMN_NAME = 'content_format');
+PREPARE studyforge_add_column_stmt FROM @studyforge_add_column_sql; EXECUTE studyforge_add_column_stmt; DEALLOCATE PREPARE studyforge_add_column_stmt;
 
 CREATE TABLE IF NOT EXISTS uploaded_files (
     file_id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
@@ -237,10 +244,12 @@ CREATE TABLE IF NOT EXISTS comments (
     CONSTRAINT fk_comments_user_id FOREIGN KEY (user_id) REFERENCES users (user_id)
 ) ENGINE=InnoDB COMMENT='Post comments';
 
-ALTER TABLE comments
-    ADD COLUMN IF NOT EXISTS parent_comment_id BIGINT UNSIGNED NULL AFTER post_id,
-    ADD COLUMN IF NOT EXISTS floor_no INT UNSIGNED NOT NULL DEFAULT 0 AFTER status,
-    ADD COLUMN IF NOT EXISTS like_count INT UNSIGNED NOT NULL DEFAULT 0 AFTER floor_no;
+SET @studyforge_add_column_sql = (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `comments` ADD COLUMN `parent_comment_id` BIGINT UNSIGNED NULL AFTER `post_id`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'comments' AND COLUMN_NAME = 'parent_comment_id');
+PREPARE studyforge_add_column_stmt FROM @studyforge_add_column_sql; EXECUTE studyforge_add_column_stmt; DEALLOCATE PREPARE studyforge_add_column_stmt;
+SET @studyforge_add_column_sql = (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `comments` ADD COLUMN `floor_no` INT UNSIGNED NOT NULL DEFAULT 0 AFTER `status`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'comments' AND COLUMN_NAME = 'floor_no');
+PREPARE studyforge_add_column_stmt FROM @studyforge_add_column_sql; EXECUTE studyforge_add_column_stmt; DEALLOCATE PREPARE studyforge_add_column_stmt;
+SET @studyforge_add_column_sql = (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `comments` ADD COLUMN `like_count` INT UNSIGNED NOT NULL DEFAULT 0 AFTER `floor_no`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'comments' AND COLUMN_NAME = 'like_count');
+PREPARE studyforge_add_column_stmt FROM @studyforge_add_column_sql; EXECUTE studyforge_add_column_stmt; DEALLOCATE PREPARE studyforge_add_column_stmt;
 
 CREATE TABLE IF NOT EXISTS comment_likes (
     comment_like_id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
@@ -399,11 +408,14 @@ CREATE TABLE IF NOT EXISTS help_answers (
     CONSTRAINT fk_help_answers_user_id FOREIGN KEY (user_id) REFERENCES users (user_id)
 ) ENGINE=InnoDB COMMENT='Answers for help requests';
 
-ALTER TABLE help_answers
-    ADD COLUMN IF NOT EXISTS parent_answer_id BIGINT UNSIGNED NULL AFTER help_id,
-    ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'VISIBLE' AFTER is_accepted,
-    ADD COLUMN IF NOT EXISTS floor_no INT UNSIGNED NOT NULL DEFAULT 0 AFTER status,
-    ADD COLUMN IF NOT EXISTS like_count INT UNSIGNED NOT NULL DEFAULT 0 AFTER floor_no;
+SET @studyforge_add_column_sql = (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `help_answers` ADD COLUMN `parent_answer_id` BIGINT UNSIGNED NULL AFTER `help_id`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'help_answers' AND COLUMN_NAME = 'parent_answer_id');
+PREPARE studyforge_add_column_stmt FROM @studyforge_add_column_sql; EXECUTE studyforge_add_column_stmt; DEALLOCATE PREPARE studyforge_add_column_stmt;
+SET @studyforge_add_column_sql = (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `help_answers` ADD COLUMN `status` VARCHAR(20) NOT NULL DEFAULT ''VISIBLE'' AFTER `is_accepted`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'help_answers' AND COLUMN_NAME = 'status');
+PREPARE studyforge_add_column_stmt FROM @studyforge_add_column_sql; EXECUTE studyforge_add_column_stmt; DEALLOCATE PREPARE studyforge_add_column_stmt;
+SET @studyforge_add_column_sql = (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `help_answers` ADD COLUMN `floor_no` INT UNSIGNED NOT NULL DEFAULT 0 AFTER `status`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'help_answers' AND COLUMN_NAME = 'floor_no');
+PREPARE studyforge_add_column_stmt FROM @studyforge_add_column_sql; EXECUTE studyforge_add_column_stmt; DEALLOCATE PREPARE studyforge_add_column_stmt;
+SET @studyforge_add_column_sql = (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `help_answers` ADD COLUMN `like_count` INT UNSIGNED NOT NULL DEFAULT 0 AFTER `floor_no`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'help_answers' AND COLUMN_NAME = 'like_count');
+PREPARE studyforge_add_column_stmt FROM @studyforge_add_column_sql; EXECUTE studyforge_add_column_stmt; DEALLOCATE PREPARE studyforge_add_column_stmt;
 
 CREATE TABLE IF NOT EXISTS help_answer_likes (
     answer_like_id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,

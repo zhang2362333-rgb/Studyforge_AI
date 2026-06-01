@@ -1,0 +1,65 @@
+services:
+  mysql:
+    image: ${MYSQL_IMAGE:-ghcr.io/niit-workshop-of-shzu/studyforge-ai-mysql:staging}
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-studyforge_ai}
+      MYSQL_USER: ${MYSQL_USER:-studyforge}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  migrate:
+    image: ${MIGRATE_IMAGE:-ghcr.io/niit-workshop-of-shzu/studyforge-ai-migrate:staging}
+    restart: "no"
+    environment:
+      DB_CLIENT: mysql
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_NAME: ${MYSQL_DATABASE:-studyforge_ai}
+      DB_USER: ${MYSQL_USER:-studyforge}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+      CREATE_DATABASE: "0"
+      RESET_SEED: "0"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  api:
+    image: ${API_IMAGE:-ghcr.io/niit-workshop-of-shzu/studyforge-ai-api:staging}
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
+      JDBC_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-studyforge_ai}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+      JDBC_USERNAME: ${MYSQL_USER:-studyforge}
+      JDBC_PASSWORD: ${MYSQL_PASSWORD}
+      JDBC_MAXIMUM_POOL_SIZE: ${JDBC_MAXIMUM_POOL_SIZE:-20}
+      JDBC_MINIMUM_IDLE: ${JDBC_MINIMUM_IDLE:-4}
+      STUDYFORGE_UPLOAD_DIR: /var/lib/studyforge/uploads
+    volumes:
+      - uploads:/var/lib/studyforge/uploads
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  web:
+    image: ${WEB_IMAGE:-ghcr.io/niit-workshop-of-shzu/studyforge-ai-web:staging}
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-7897}:80"
+    depends_on:
+      - api
+
+volumes:
+  mysql-data:
+  uploads:

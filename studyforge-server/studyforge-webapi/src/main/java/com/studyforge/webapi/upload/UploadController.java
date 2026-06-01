@@ -7,10 +7,10 @@ import com.studyforge.common.exception.ErrorCode;
 import com.studyforge.system.service.AuthService;
 import com.studyforge.system.service.UploadedFileService;
 import com.studyforge.system.entity.UploadedFile;
+import com.studyforge.webapi.support.UploadStorage;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
@@ -40,9 +40,7 @@ public class UploadController {
     public UploadController(AuthService authService, UploadedFileService uploadedFileService) {
         this.authService = authService;
         this.uploadedFileService = uploadedFileService;
-        Path workingDirectory = Paths.get(System.getProperty("user.dir")).toAbsolutePath();
-        Path projectRoot = workingDirectory.getParent() == null ? workingDirectory : workingDirectory.getParent();
-        this.imageRoot = projectRoot.resolve("uploads").resolve("images").normalize();
+        this.imageRoot = UploadStorage.imageRoot();
     }
 
     @PostMapping(value = "/uploads/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

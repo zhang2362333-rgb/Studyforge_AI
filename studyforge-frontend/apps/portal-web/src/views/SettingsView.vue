@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
-import { KeyRound, RefreshCw, Save, Volume2 } from '@lucide/vue';
+import { computed, onMounted, ref } from 'vue';
+import { ImagePlus, KeyRound, RefreshCw, Save, Volume2 } from '@lucide/vue';
 import { getIntegrationSettings, saveIntegrationSettings } from '@/api/settings';
 import LoadingState from '@/components/LoadingState.vue';
 import type { IntegrationSetting } from '@/types/api';
@@ -10,6 +10,10 @@ const loading = ref(false);
 const saving = ref(false);
 const errorMessage = ref('');
 const savedMessage = ref('');
+
+const aiSettings = computed(() => settings.value.filter((item) => item.settingKey.startsWith('ai.')));
+const voiceSettings = computed(() => settings.value.filter((item) => item.settingKey.startsWith('voice.')));
+const imageSettings = computed(() => settings.value.filter((item) => item.settingKey.startsWith('image.')));
 
 async function loadSettings() {
   loading.value = true;
@@ -49,7 +53,11 @@ function label(key: string) {
     'voice.base_url': '语音 Base URL',
     'voice.api_key': '语音 API Key',
     'voice.model': '语音模型',
-    'voice.name': '语音音色'
+    'voice.name': '语音音色',
+    'image.base_url': '生图 Base URL',
+    'image.api_key': '生图 API Key',
+    'image.model': '生图模型',
+    'image.size': '封面尺寸'
   };
   return labels[key] ?? key;
 }
@@ -62,7 +70,7 @@ onMounted(loadSettings);
     <div class="page-header">
       <div class="section-heading">
         <span>Integrations</span>
-        <h1>AI 与语音设置</h1>
+        <h1>AI、语音与生图设置</h1>
       </div>
 
       <div class="toolbar">
@@ -87,7 +95,8 @@ onMounted(loadSettings);
           <KeyRound :size="19" />
           <span>文本 AI</span>
         </div>
-        <label v-for="setting in settings.filter((item) => item.settingKey.startsWith('ai.'))" :key="setting.settingKey">
+        <p class="settings-panel-note">用于 AI 摘要、复习卡片、文章问答和 AI 排版。</p>
+        <label v-for="setting in aiSettings" :key="setting.settingKey">
           <span>{{ label(setting.settingKey) }}</span>
           <input v-model.trim="setting.settingValue" :type="setting.secretFlag ? 'password' : 'text'" />
         </label>
@@ -98,7 +107,20 @@ onMounted(loadSettings);
           <Volume2 :size="19" />
           <span>语音服务</span>
         </div>
-        <label v-for="setting in settings.filter((item) => item.settingKey.startsWith('voice.'))" :key="setting.settingKey">
+        <p class="settings-panel-note">用于用户侧语音输入、语音记录和学习内容转写。</p>
+        <label v-for="setting in voiceSettings" :key="setting.settingKey">
+          <span>{{ label(setting.settingKey) }}</span>
+          <input v-model.trim="setting.settingValue" :type="setting.secretFlag ? 'password' : 'text'" />
+        </label>
+      </section>
+
+      <section class="settings-panel">
+        <div class="settings-panel-title">
+          <ImagePlus :size="19" />
+          <span>封面生图</span>
+        </div>
+        <p class="settings-panel-note">用于用户发布文章时的“生成封面”，会根据标题、摘要和正文生成博客风格封面图。</p>
+        <label v-for="setting in imageSettings" :key="setting.settingKey">
           <span>{{ label(setting.settingKey) }}</span>
           <input v-model.trim="setting.settingValue" :type="setting.secretFlag ? 'password' : 'text'" />
         </label>

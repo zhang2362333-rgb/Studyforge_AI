@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import * as authApi from '@/api/auth';
 import { clearStoredSession, readStoredSession, writeStoredSession } from '@/stores/sessionStorage';
-import type { LoginRequest, LoginSession } from '@/types/api';
+import type { LoginRequest, LoginSession, RegisterRequest } from '@/types/api';
 import type { UserProfile } from '@/types/api';
 
 interface SessionState {
@@ -36,6 +36,22 @@ export const useSessionStore = defineStore('session', {
 
       try {
         const session = await authApi.login(payload);
+        this.session = session;
+        writeStoredSession(session);
+        return session;
+      } finally {
+        this.loading = false;
+      }
+    },
+    async register(payload: RegisterRequest) {
+      this.loading = true;
+
+      try {
+        await authApi.register(payload);
+        const session = await authApi.login({
+          account: payload.username,
+          password: payload.password
+        });
         this.session = session;
         writeStoredSession(session);
         return session;

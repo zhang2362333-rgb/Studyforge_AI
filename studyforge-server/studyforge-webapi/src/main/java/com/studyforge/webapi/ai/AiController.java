@@ -14,10 +14,10 @@ import com.studyforge.content.service.PostQueryService;
 import com.studyforge.content.vo.PostDetailVO;
 import com.studyforge.system.service.AuthService;
 import com.studyforge.system.service.UploadedFileService;
+import com.studyforge.webapi.support.UploadStorage;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
@@ -50,9 +50,7 @@ public class AiController {
         this.postQueryService = postQueryService;
         this.authService = authService;
         this.uploadedFileService = uploadedFileService;
-        Path workingDirectory = Paths.get(System.getProperty("user.dir")).toAbsolutePath();
-        Path projectRoot = workingDirectory.getParent() == null ? workingDirectory : workingDirectory.getParent();
-        this.imageRoot = projectRoot.resolve("uploads").resolve("images").normalize();
+        this.imageRoot = UploadStorage.imageRoot();
     }
 
     @PostMapping("/posts/{postId}/summary")

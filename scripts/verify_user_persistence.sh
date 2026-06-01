@@ -4,8 +4,20 @@ set -euo pipefail
 API_BASE="${API_BASE:-http://localhost:8080/api/v1}"
 DB_NAME="${DB_NAME:-test_studyforge_ai_v2}"
 DB_USER="${DB_USER:-lynn}"
+DB_CLIENT="${DB_CLIENT:-}"
 ACCOUNT="${ACCOUNT:-chen_jiayi}"
 PASSWORD="${PASSWORD:-StudyForge@2026}"
+
+if [ -z "$DB_CLIENT" ]; then
+    if command -v mariadb >/dev/null 2>&1; then
+        DB_CLIENT="mariadb"
+    elif command -v mysql >/dev/null 2>&1; then
+        DB_CLIENT="mysql"
+    else
+        echo "Neither mariadb nor mysql client was found in PATH" >&2
+        exit 1
+    fi
+fi
 
 TOKEN="$(curl -fsS -H 'Content-Type: application/json' \
     -d "{\"account\":\"${ACCOUNT}\",\"password\":\"${PASSWORD}\"}" \
@@ -29,11 +41,11 @@ if ! [[ "$POST_ID" =~ ^[0-9]+$ ]]; then
 fi
 
 cleanup() {
-    mariadb -u"${DB_USER}" "${DB_NAME}" -e "DELETE FROM posts WHERE post_id=${POST_ID};" >/dev/null 2>&1 || true
+    "$DB_CLIENT" -u"${DB_USER}" "${DB_NAME}" -e "DELETE FROM posts WHERE post_id=${POST_ID};" >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
 
-DB_COUNT="$(mariadb -u"${DB_USER}" "${DB_NAME}" -N -B -e "SELECT COUNT(*) FROM posts p JOIN post_i18n pi ON pi.post_id=p.post_id WHERE p.post_id=${POST_ID} AND pi.title='${TITLE}';")"
+DB_COUNT="$("$DB_CLIENT" -u"${DB_USER}" "${DB_NAME}" -N -B -e "SELECT COUNT(*) FROM posts p JOIN post_i18n pi ON pi.post_id=p.post_id WHERE p.post_id=${POST_ID} AND pi.title='${TITLE}';")"
 DETAIL_ID="$(curl -fsS "${API_BASE}/posts/${POST_ID}?languageCode=zh_CN" | jq -r '.data.postId')"
 PROFILE_FOUND="$(curl -fsS -H "Authorization: Bearer ${TOKEN}" "${API_BASE}/users/1/posts?languageCode=zh_CN&limit=5" | jq --argjson postId "$POST_ID" 'any(.data[]; .postId == $postId)')"
 

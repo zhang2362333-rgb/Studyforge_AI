@@ -15,7 +15,7 @@ const modules = [
   { name: '帖子审核', owner: '处理举报、下架违规内容、恢复误判帖子', status: 'live', label: '可管理' },
   { name: '置顶推荐', owner: '把值得阅读的文章固定在更靠前的位置', status: 'live', label: '可管理' },
   { name: '账号状态', owner: '查看账号资料、发帖数、评论数和社区等级', status: 'live', label: '可管理' },
-  { name: 'AI 与语音设置', owner: '维护模型地址、密钥和语音服务参数', status: 'live', label: '可管理' }
+  { name: 'AI 与模型设置', owner: '维护文本、语音和封面生图的模型参数', status: 'live', label: '可管理' }
 ];
 
 async function loadHealth() {
@@ -87,7 +87,7 @@ onMounted(loadHealth);
       <div class="metric-card">
         <Database :size="20" />
         <span>数据库</span>
-        <strong>test_studyforge_ai_v2</strong>
+        <strong>MySQL / MariaDB</strong>
       </div>
       <div class="metric-card">
         <ServerCog :size="20" />

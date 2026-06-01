@@ -8,7 +8,7 @@ import PostDetailView from '@/views/PostDetailView.vue';
 import SettingsView from '@/views/SettingsView.vue';
 
 export const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: '/',

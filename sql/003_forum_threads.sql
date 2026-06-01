@@ -1,7 +1,9 @@
-ALTER TABLE comments
-    ADD COLUMN IF NOT EXISTS parent_comment_id BIGINT UNSIGNED NULL AFTER post_id,
-    ADD COLUMN IF NOT EXISTS floor_no INT UNSIGNED NOT NULL DEFAULT 0 AFTER status,
-    ADD COLUMN IF NOT EXISTS like_count INT UNSIGNED NOT NULL DEFAULT 0 AFTER floor_no;
+SET @studyforge_add_column_sql = (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `comments` ADD COLUMN `parent_comment_id` BIGINT UNSIGNED NULL AFTER `post_id`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'comments' AND COLUMN_NAME = 'parent_comment_id');
+PREPARE studyforge_add_column_stmt FROM @studyforge_add_column_sql; EXECUTE studyforge_add_column_stmt; DEALLOCATE PREPARE studyforge_add_column_stmt;
+SET @studyforge_add_column_sql = (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `comments` ADD COLUMN `floor_no` INT UNSIGNED NOT NULL DEFAULT 0 AFTER `status`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'comments' AND COLUMN_NAME = 'floor_no');
+PREPARE studyforge_add_column_stmt FROM @studyforge_add_column_sql; EXECUTE studyforge_add_column_stmt; DEALLOCATE PREPARE studyforge_add_column_stmt;
+SET @studyforge_add_column_sql = (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `comments` ADD COLUMN `like_count` INT UNSIGNED NOT NULL DEFAULT 0 AFTER `floor_no`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'comments' AND COLUMN_NAME = 'like_count');
+PREPARE studyforge_add_column_stmt FROM @studyforge_add_column_sql; EXECUTE studyforge_add_column_stmt; DEALLOCATE PREPARE studyforge_add_column_stmt;
 
 CREATE TABLE IF NOT EXISTS comment_likes (
     comment_like_id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
@@ -32,11 +34,14 @@ LEFT JOIN (
 ) likes ON likes.comment_id = c.comment_id
 SET c.like_count = COALESCE(likes.like_count, 0);
 
-ALTER TABLE help_answers
-    ADD COLUMN IF NOT EXISTS parent_answer_id BIGINT UNSIGNED NULL AFTER help_id,
-    ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'VISIBLE' AFTER is_accepted,
-    ADD COLUMN IF NOT EXISTS floor_no INT UNSIGNED NOT NULL DEFAULT 0 AFTER status,
-    ADD COLUMN IF NOT EXISTS like_count INT UNSIGNED NOT NULL DEFAULT 0 AFTER floor_no;
+SET @studyforge_add_column_sql = (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `help_answers` ADD COLUMN `parent_answer_id` BIGINT UNSIGNED NULL AFTER `help_id`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'help_answers' AND COLUMN_NAME = 'parent_answer_id');
+PREPARE studyforge_add_column_stmt FROM @studyforge_add_column_sql; EXECUTE studyforge_add_column_stmt; DEALLOCATE PREPARE studyforge_add_column_stmt;
+SET @studyforge_add_column_sql = (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `help_answers` ADD COLUMN `status` VARCHAR(20) NOT NULL DEFAULT ''VISIBLE'' AFTER `is_accepted`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'help_answers' AND COLUMN_NAME = 'status');
+PREPARE studyforge_add_column_stmt FROM @studyforge_add_column_sql; EXECUTE studyforge_add_column_stmt; DEALLOCATE PREPARE studyforge_add_column_stmt;
+SET @studyforge_add_column_sql = (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `help_answers` ADD COLUMN `floor_no` INT UNSIGNED NOT NULL DEFAULT 0 AFTER `status`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'help_answers' AND COLUMN_NAME = 'floor_no');
+PREPARE studyforge_add_column_stmt FROM @studyforge_add_column_sql; EXECUTE studyforge_add_column_stmt; DEALLOCATE PREPARE studyforge_add_column_stmt;
+SET @studyforge_add_column_sql = (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `help_answers` ADD COLUMN `like_count` INT UNSIGNED NOT NULL DEFAULT 0 AFTER `floor_no`', 'DO 0') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'help_answers' AND COLUMN_NAME = 'like_count');
+PREPARE studyforge_add_column_stmt FROM @studyforge_add_column_sql; EXECUTE studyforge_add_column_stmt; DEALLOCATE PREPARE studyforge_add_column_stmt;
 
 CREATE TABLE IF NOT EXISTS help_answer_likes (
     answer_like_id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,

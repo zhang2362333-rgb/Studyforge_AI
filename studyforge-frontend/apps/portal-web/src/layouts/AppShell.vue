@@ -58,7 +58,7 @@ async function handleLogout() {
         </RouterLink>
         <RouterLink to="/settings">
           <Settings :size="18" />
-          <span>AI 与语音设置</span>
+          <span>AI 与模型设置</span>
         </RouterLink>
       </nav>
 

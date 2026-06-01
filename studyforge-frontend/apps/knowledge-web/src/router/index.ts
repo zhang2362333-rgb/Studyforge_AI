@@ -13,7 +13,7 @@ import PublishView from '@/views/PublishView.vue';
 import HelpView from '@/views/HelpView.vue';
 
 export const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: '/',
