@@ -6,6 +6,7 @@ public enum ErrorCode {
     UNAUTHORIZED(4010, "unauthorized"),
     FORBIDDEN(4030, "forbidden"),
     NOT_FOUND(4040, "resource not found"),
+    METHOD_NOT_ALLOWED(4050, "method not allowed"),
     INTERNAL_ERROR(5000, "internal server error");
 
     private final int code;

@@ -100,7 +100,7 @@ jobs:
 
       - name: Build backend
         working-directory: studyforge-server
-        run: mvn -DskipTests package
+        run: mvn -B package
 
       - name: Set up Node
         uses: actions/setup-node@v5
@@ -116,6 +116,10 @@ jobs:
       - name: Typecheck frontend
         working-directory: studyforge-frontend
         run: npm run typecheck
+
+      - name: Test frontend
+        working-directory: studyforge-frontend
+        run: npm test
 
       - name: Build frontend
         working-directory: studyforge-frontend

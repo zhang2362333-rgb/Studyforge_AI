@@ -7,7 +7,9 @@
     "dev": "vite --host 0.0.0.0 --port 5174",
     "build": "vue-tsc --noEmit && vite build",
     "typecheck": "vue-tsc --noEmit",
-    "preview": "vite preview --host 0.0.0.0 --port 4174"
+    "preview": "vite preview --host 0.0.0.0 --port 4174",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@lucide/vue": "^1.16.0",
@@ -22,8 +24,10 @@
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.2.1",
     "@vue/tsconfig": "^0.7.0",
+    "happy-dom": "^15.11.7",
     "typescript": "~5.7.2",
     "vite": "^6.0.5",
+    "vitest": "^2.1.8",
     "vue-tsc": "^2.2.0"
   }
 }
