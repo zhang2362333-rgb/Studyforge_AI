@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.studyforge.system.mapper.UploadedFileMapper">
+    <resultMap id="UploadedFileResultMap" type="com.studyforge.system.entity.UploadedFile">
+        <id column="file_id" property="fileId"/>
+        <result column="user_id" property="userId"/>
+        <result column="biz_type" property="bizType"/>
+        <result column="original_filename" property="originalFilename"/>
+        <result column="stored_filename" property="storedFilename"/>
+        <result column="file_url" property="fileUrl"/>
+        <result column="content_type" property="contentType"/>
+        <result column="file_size" property="fileSize"/>
+        <result column="status" property="status"/>
+        <result column="created_time" property="createdTime"/>
+        <result column="updated_time" property="updatedTime"/>
+    </resultMap>
+
+    <select id="selectByStoredFilename" parameterType="string" resultMap="UploadedFileResultMap">
+        SELECT
+            file_id,
+            user_id,
+            biz_type,
+            original_filename,
+            stored_filename,
+            file_url,
+            content_type,
+            file_size,
+            status,
+            created_time,
+            updated_time
+        FROM uploaded_files
+        WHERE stored_filename = #{storedFilename}
+          AND status = 'ACTIVE'
+        LIMIT 1
+    </select>
+
+    <insert id="insert" parameterType="com.studyforge.system.entity.UploadedFile" useGeneratedKeys="true" keyProperty="fileId">
+        INSERT INTO uploaded_files (
+            user_id,
+            biz_type,
+            original_filename,
+            stored_filename,
+            file_url,
+            content_type,
+            file_size,
+            status
+        )
+        VALUES (
+            #{userId},
+            #{bizType},
+            #{originalFilename},
+            #{storedFilename},
+            #{fileUrl},
+            #{contentType},
+            #{fileSize},
+            #{status}
+        )
+    </insert>
+</mapper>

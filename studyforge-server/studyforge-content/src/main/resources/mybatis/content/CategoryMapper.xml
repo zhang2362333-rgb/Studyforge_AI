@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.studyforge.content.mapper.CategoryMapper">
+    <resultMap id="CategoryResultMap" type="com.studyforge.content.entity.Category">
+        <id column="category_id" property="categoryId"/>
+        <result column="category_code" property="categoryCode"/>
+        <result column="sort_no" property="sortNo"/>
+        <result column="status" property="status"/>
+    </resultMap>
+
+    <select id="selectById" parameterType="long" resultMap="CategoryResultMap">
+        SELECT category_id, category_code, sort_no, status
+        FROM categories
+        WHERE category_id = #{categoryId}
+    </select>
+
+    <select id="selectAll" resultMap="CategoryResultMap">
+        SELECT category_id, category_code, sort_no, status
+        FROM categories
+        WHERE status = 'ACTIVE'
+        ORDER BY sort_no, category_id
+    </select>
+</mapper>

@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.studyforge.help.mapper.HelpAnswerMapper">
+    <resultMap id="HelpAnswerResultMap" type="com.studyforge.help.entity.HelpAnswer">
+        <id column="answer_id" property="answerId"/>
+        <result column="help_id" property="helpId"/>
+        <result column="parent_answer_id" property="parentAnswerId"/>
+        <result column="user_id" property="userId"/>
+        <result column="content" property="content"/>
+        <result column="is_accepted" property="accepted"/>
+        <result column="status" property="status"/>
+        <result column="floor_no" property="floorNo"/>
+        <result column="like_count" property="likeCount"/>
+        <result column="created_time" property="createdTime"/>
+        <result column="updated_time" property="updatedTime"/>
+        <result column="author_username" property="authorUsername"/>
+        <result column="author_name" property="authorName"/>
+        <result column="author_avatar_url" property="authorAvatarUrl"/>
+        <result column="parent_user_id" property="parentUserId"/>
+        <result column="parent_author_username" property="parentAuthorUsername"/>
+        <result column="parent_author_name" property="parentAuthorName"/>
+        <result column="liked_by_viewer" property="likedByViewer"/>
+    </resultMap>
+
+    <sql id="HelpAnswerColumns">
+        a.answer_id,
+        a.help_id,
+        a.parent_answer_id,
+        a.user_id,
+        a.content,
+        a.is_accepted,
+        a.status,
+        a.floor_no,
+        a.like_count,
+        a.created_time,
+        a.updated_time,
+        author.username AS author_username,
+        COALESCE(NULLIF(author.display_name, ''), author.username) AS author_name,
+        author.avatar_url AS author_avatar_url,
+        parent.user_id AS parent_user_id,
+        parent_author.username AS parent_author_username,
+        COALESCE(NULLIF(parent_author.display_name, ''), parent_author.username) AS parent_author_name,
+        CASE
+            WHEN #{viewerId} IS NOT NULL
+             AND EXISTS (
+                SELECT 1
+                FROM help_answer_likes liked
+                WHERE liked.answer_id = a.answer_id
+                  AND liked.user_id = #{viewerId}
+             )
+            THEN 1
+            ELSE 0
+        END AS liked_by_viewer
+    </sql>
+
+    <select id="selectById" resultMap="HelpAnswerResultMap">
+        SELECT
+            answer_id,
+            help_id,
+            parent_answer_id,
+            user_id,
+            content,
+            is_accepted,
+            status,
+            floor_no,
+            like_count,
+            created_time,
+            updated_time
+        FROM help_answers
+        WHERE answer_id = #{answerId}
+    </select>
+
+    <select id="selectByIdForViewer" resultMap="HelpAnswerResultMap">
+        SELECT
+        <include refid="HelpAnswerColumns"/>
+        FROM help_answers a
+        JOIN users author ON author.user_id = a.user_id
+        LEFT JOIN help_answers parent ON parent.answer_id = a.parent_answer_id
+        LEFT JOIN users parent_author ON parent_author.user_id = parent.user_id
+        WHERE a.answer_id = #{answerId}
+    </select>
+
+    <select id="selectByHelpId" resultMap="HelpAnswerResultMap">
+        SELECT
+        <include refid="HelpAnswerColumns"/>
+        FROM help_answers a
+        JOIN users author ON author.user_id = a.user_id
+        LEFT JOIN help_answers parent ON parent.answer_id = a.parent_answer_id
+        LEFT JOIN users parent_author ON parent_author.user_id = parent.user_id
+        WHERE a.help_id = #{helpId}
+          AND a.status IN ('VISIBLE', 'DELETED')
+        ORDER BY a.is_accepted DESC, a.floor_no ASC, a.created_time ASC, a.answer_id ASC
+    </select>
+
+    <select id="nextFloorNo" resultType="int">
+        SELECT COALESCE(MAX(floor_no), 0) + 1
+        FROM help_answers
+        WHERE help_id = #{helpId}
+    </select>
+
+    <insert id="insert" parameterType="com.studyforge.help.entity.HelpAnswer" useGeneratedKeys="true" keyProperty="answerId">
+        INSERT INTO help_answers (
+            help_id,
+            parent_answer_id,
+            user_id,
+            content,
+            is_accepted,
+            status,
+            floor_no,
+            like_count
+        )
+        VALUES (
+            #{helpId},
+            #{parentAnswerId},
+            #{userId},
+            #{content},
+            #{accepted},
+            #{status},
+            #{floorNo},
+            COALESCE(#{likeCount}, 0)
+        )
+    </insert>
+
+    <update id="markDeleted">
+        UPDATE help_answers
+        SET status = 'DELETED',
+            is_accepted = 0
+        WHERE answer_id = #{answerId}
+          AND status = 'VISIBLE'
+    </update>
+
+    <update id="incrementLikeCount">
+        UPDATE help_answers
+        SET like_count = GREATEST(0, like_count + #{delta})
+        WHERE answer_id = #{answerId}
+    </update>
+
+    <select id="countLike" resultType="int">
+        SELECT COUNT(*)
+        FROM help_answer_likes
+        WHERE answer_id = #{answerId}
+          AND user_id = #{userId}
+    </select>
+
+    <insert id="insertLike">
+        INSERT IGNORE INTO help_answer_likes (answer_id, user_id)
+        VALUES (#{answerId}, #{userId})
+    </insert>
+
+    <delete id="deleteLike">
+        DELETE FROM help_answer_likes
+        WHERE answer_id = #{answerId}
+          AND user_id = #{userId}
+    </delete>
+
+    <update id="clearAccepted">
+        UPDATE help_answers
+        SET is_accepted = 0
+        WHERE help_id = #{helpId}
+          AND status = 'VISIBLE'
+    </update>
+
+    <update id="accept">
+        UPDATE help_answers
+        SET is_accepted = 1
+        WHERE answer_id = #{answerId}
+          AND status = 'VISIBLE'
+    </update>
+</mapper>

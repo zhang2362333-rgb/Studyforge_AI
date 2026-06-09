@@ -1,0 +1,6 @@
+jdbc.driverClassName=com.mysql.cj.jdbc.Driver
+jdbc.url=jdbc:mysql://127.0.0.1:3306/studyforge_ai?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+jdbc.username=studyforge
+jdbc.password=change-this-password
+jdbc.maximumPoolSize=20
+jdbc.minimumIdle=4

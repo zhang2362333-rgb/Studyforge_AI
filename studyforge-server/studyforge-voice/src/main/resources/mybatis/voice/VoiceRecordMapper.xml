@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.studyforge.voice.mapper.VoiceRecordMapper">
+    <insert id="insert" parameterType="com.studyforge.voice.entity.VoiceRecord" useGeneratedKeys="true" keyProperty="recordId">
+        INSERT INTO voice_records (
+            user_id,
+            post_id,
+            voice_type,
+            audio_url,
+            recognized_text
+        )
+        VALUES (
+            #{userId},
+            #{postId},
+            #{voiceType},
+            #{audioUrl},
+            #{recognizedText}
+        )
+    </insert>
+</mapper>

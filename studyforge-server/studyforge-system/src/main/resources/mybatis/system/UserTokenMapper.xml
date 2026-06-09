@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.studyforge.system.mapper.UserTokenMapper">
+    <resultMap id="UserTokenResultMap" type="com.studyforge.system.entity.UserToken">
+        <id column="token_id" property="tokenId"/>
+        <result column="user_id" property="userId"/>
+        <result column="access_token" property="accessToken"/>
+        <result column="expire_time" property="expireTime"/>
+        <result column="status" property="status"/>
+    </resultMap>
+
+    <select id="selectByToken" parameterType="string" resultMap="UserTokenResultMap">
+        SELECT
+            token_id,
+            user_id,
+            access_token,
+            expire_time,
+            status
+        FROM user_tokens
+        WHERE access_token = #{accessToken}
+        LIMIT 1
+    </select>
+
+    <insert id="insert" parameterType="com.studyforge.system.entity.UserToken" useGeneratedKeys="true" keyProperty="tokenId">
+        INSERT INTO user_tokens (
+            user_id,
+            access_token,
+            expire_time,
+            status
+        )
+        VALUES (
+            #{userId},
+            #{accessToken},
+            #{expireTime},
+            #{status}
+        )
+    </insert>
+
+    <update id="updateStatusByToken">
+        UPDATE user_tokens
+        SET status = #{status}
+        WHERE access_token = #{accessToken}
+    </update>
+</mapper>

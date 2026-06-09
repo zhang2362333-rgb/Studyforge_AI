@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.studyforge.content.mapper.PostMapper">
+    <resultMap id="PostResultMap" type="com.studyforge.content.entity.Post">
+        <id column="post_id" property="postId"/>
+        <result column="author_id" property="authorId"/>
+        <result column="category_id" property="categoryId"/>
+        <result column="original_language" property="originalLanguage"/>
+        <result column="status" property="status"/>
+        <result column="cover_image_url" property="coverImageUrl"/>
+        <result column="featured" property="featured"/>
+        <result column="like_count" property="likeCount"/>
+        <result column="favorite_count" property="favoriteCount"/>
+        <result column="comment_count" property="commentCount"/>
+        <result column="view_count" property="viewCount"/>
+        <result column="hot_score" property="hotScore"/>
+        <result column="created_time" property="createdTime"/>
+        <result column="updated_time" property="updatedTime"/>
+    </resultMap>
+
+    <sql id="PostColumns">
+        post_id,
+        author_id,
+        category_id,
+        original_language,
+        status,
+        cover_image_url,
+        featured,
+        like_count,
+        favorite_count,
+        comment_count,
+        view_count,
+        hot_score,
+        created_time,
+        updated_time
+    </sql>
+
+    <sql id="PostColumnsWithAlias">
+        p.post_id,
+        p.author_id,
+        p.category_id,
+        p.original_language,
+        p.status,
+        p.cover_image_url,
+        p.featured,
+        p.like_count,
+        p.favorite_count,
+        p.comment_count,
+        p.view_count,
+        p.hot_score,
+        p.created_time,
+        p.updated_time
+    </sql>
+
+    <select id="selectById" parameterType="long" resultMap="PostResultMap">
+        SELECT
+        <include refid="PostColumns"/>
+        FROM posts
+        WHERE post_id = #{postId}
+    </select>
+
+    <select id="selectOriginalTitle" resultType="string">
+        SELECT COALESCE(pi.title, '')
+        FROM posts p
+        LEFT JOIN post_i18n pi ON pi.post_id = p.post_id AND pi.language_code = p.original_language
+        WHERE p.post_id = #{postId}
+        LIMIT 1
+    </select>
+
+    <select id="selectPublishedByHotScore" resultMap="PostResultMap">
+        SELECT
+        <include refid="PostColumns"/>
+        FROM posts
+        WHERE status = 'PUBLISHED'
+        ORDER BY featured DESC, hot_score DESC, updated_time DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectPublished" resultMap="PostResultMap">
+        SELECT
+        <include refid="PostColumnsWithAlias"/>
+        FROM posts p
+        <if test="categoryCode != null and categoryCode != '' and categoryCode != 'ALL'">
+            JOIN categories c ON c.category_id = p.category_id
+        </if>
+        WHERE p.status = 'PUBLISHED'
+        <if test="categoryCode != null and categoryCode != '' and categoryCode != 'ALL'">
+            AND c.category_code = #{categoryCode}
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND EXISTS (
+                SELECT 1
+                FROM post_i18n pi
+                WHERE pi.post_id = p.post_id
+                  AND (
+                    pi.title LIKE CONCAT('%', #{keyword}, '%')
+                    OR pi.summary LIKE CONCAT('%', #{keyword}, '%')
+                    OR pi.content LIKE CONCAT('%', #{keyword}, '%')
+                  )
+            )
+        </if>
+        ORDER BY p.created_time DESC, p.post_id DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectFavoritesByUser" resultMap="PostResultMap">
+        SELECT
+        <include refid="PostColumnsWithAlias"/>
+        FROM post_favorites f
+        JOIN posts p ON p.post_id = f.post_id
+        WHERE f.user_id = #{userId}
+          AND p.status = 'PUBLISHED'
+        ORDER BY f.created_time DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectPublishedByAuthor" resultMap="PostResultMap">
+        SELECT
+        <include refid="PostColumnsWithAlias"/>
+        FROM posts p
+        WHERE p.author_id = #{authorId}
+          AND p.status = 'PUBLISHED'
+        ORDER BY p.created_time DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectFavoriteCollectionByUser" resultMap="PostResultMap">
+        SELECT
+        <include refid="PostColumnsWithAlias"/>
+        FROM favorite_collection_items i
+        JOIN favorite_collections fc ON fc.collection_id = i.collection_id
+        JOIN posts p ON p.post_id = i.post_id
+        WHERE i.user_id = #{userId}
+          AND i.collection_id = #{collectionId}
+          AND fc.user_id = #{userId}
+          AND p.status = 'PUBLISHED'
+        ORDER BY i.created_time DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectHistoryByUser" resultMap="PostResultMap">
+        SELECT
+        <include refid="PostColumnsWithAlias"/>
+        FROM post_view_history h
+        JOIN posts p ON p.post_id = h.post_id
+        WHERE h.user_id = #{userId}
+          AND p.status = 'PUBLISHED'
+        ORDER BY h.view_time DESC
+        LIMIT #{limit}
+    </select>
+
+    <insert id="insert" parameterType="com.studyforge.content.entity.Post" useGeneratedKeys="true" keyProperty="postId">
+        INSERT INTO posts (
+            author_id,
+            category_id,
+            original_language,
+            status,
+            cover_image_url,
+            featured,
+            like_count,
+            favorite_count,
+            comment_count,
+            view_count,
+            hot_score
+        )
+        VALUES (
+            #{authorId},
+            #{categoryId},
+            #{originalLanguage},
+            #{status},
+            #{coverImageUrl},
+            #{featured},
+            #{likeCount},
+            #{favoriteCount},
+            #{commentCount},
+            #{viewCount},
+            #{hotScore}
+        )
+    </insert>
+
+    <update id="updateById" parameterType="com.studyforge.content.entity.Post">
+        UPDATE posts
+        SET
+            category_id = #{categoryId},
+            original_language = #{originalLanguage},
+            status = #{status},
+            cover_image_url = #{coverImageUrl},
+            featured = #{featured},
+            like_count = #{likeCount},
+            favorite_count = #{favoriteCount},
+            comment_count = #{commentCount},
+            view_count = #{viewCount},
+            hot_score = #{hotScore}
+        WHERE post_id = #{postId}
+    </update>
+
+    <update id="incrementLikeCount">
+        UPDATE posts
+        SET
+            like_count = GREATEST(0, like_count + #{delta}),
+            hot_score = GREATEST(0, hot_score + (#{delta} * 2))
+        WHERE post_id = #{postId}
+    </update>
+
+    <update id="incrementFavoriteCount">
+        UPDATE posts
+        SET
+            favorite_count = GREATEST(0, favorite_count + #{delta}),
+            hot_score = GREATEST(0, hot_score + (#{delta} * 3))
+        WHERE post_id = #{postId}
+    </update>
+
+    <update id="incrementCommentCount">
+        UPDATE posts
+        SET
+            comment_count = GREATEST(0, comment_count + #{delta}),
+            hot_score = GREATEST(0, hot_score + (#{delta} * 4))
+        WHERE post_id = #{postId}
+    </update>
+
+    <update id="incrementViewCount">
+        UPDATE posts
+        SET
+            view_count = view_count + 1,
+            hot_score = hot_score + 0.25
+        WHERE post_id = #{postId}
+    </update>
+
+    <delete id="deleteById" parameterType="long">
+        DELETE FROM posts
+        WHERE post_id = #{postId}
+    </delete>
+</mapper>

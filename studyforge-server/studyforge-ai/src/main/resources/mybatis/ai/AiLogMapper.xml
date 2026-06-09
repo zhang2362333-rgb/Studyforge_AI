@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.studyforge.ai.mapper.AiLogMapper">
+    <resultMap id="AiLogResultMap" type="com.studyforge.ai.entity.AiLog">
+        <id column="log_id" property="logId"/>
+        <result column="user_id" property="userId"/>
+        <result column="post_id" property="postId"/>
+        <result column="ai_type" property="aiType"/>
+        <result column="request_text" property="requestText"/>
+        <result column="response_text" property="responseText"/>
+        <result column="success" property="success"/>
+        <result column="created_time" property="createdTime"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.studyforge.ai.entity.AiLog" useGeneratedKeys="true" keyProperty="logId">
+        INSERT INTO ai_logs (
+            user_id,
+            post_id,
+            ai_type,
+            request_text,
+            response_text,
+            success
+        )
+        VALUES (
+            #{userId},
+            #{postId},
+            #{aiType},
+            #{requestText},
+            #{responseText},
+            #{success}
+        )
+    </insert>
+
+    <select id="selectByUserAndType" resultMap="AiLogResultMap">
+        SELECT
+            log_id,
+            user_id,
+            post_id,
+            ai_type,
+            request_text,
+            response_text,
+            success,
+            created_time
+        FROM ai_logs
+        WHERE user_id = #{userId}
+          AND ai_type = #{aiType}
+        ORDER BY created_time DESC
+        LIMIT #{limit}
+    </select>
+</mapper>

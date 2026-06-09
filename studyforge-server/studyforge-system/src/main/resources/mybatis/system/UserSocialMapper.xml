@@ -1,0 +1,524 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.studyforge.system.mapper.UserSocialMapper">
+    <resultMap id="SocialUserResultMap" type="com.studyforge.system.entity.User">
+        <id column="user_id" property="userId"/>
+        <result column="username" property="username"/>
+        <result column="display_name" property="displayName"/>
+        <result column="email" property="email"/>
+        <result column="password_hash" property="passwordHash"/>
+        <result column="role" property="role"/>
+        <result column="status" property="status"/>
+        <result column="bio" property="bio"/>
+        <result column="avatar_url" property="avatarUrl"/>
+        <result column="banner_url" property="bannerUrl"/>
+        <result column="community_level" property="communityLevel"/>
+        <result column="experience_points" property="experiencePoints"/>
+        <result column="last_login_reward_date" property="lastLoginRewardDate"/>
+        <result column="reputation_score" property="reputationScore"/>
+        <result column="created_time" property="createdTime"/>
+    </resultMap>
+
+    <sql id="UserColumnsWithAlias">
+        u.user_id,
+        u.username,
+        u.display_name,
+        u.email,
+        u.password_hash,
+        u.role,
+        u.status,
+        u.bio,
+        u.avatar_url,
+        u.banner_url,
+        u.community_level,
+        u.experience_points,
+        u.last_login_reward_date,
+        u.reputation_score,
+        u.created_time
+    </sql>
+
+    <select id="countPosts" resultType="int">
+        SELECT COUNT(*)
+        FROM posts
+        WHERE author_id = #{userId}
+          AND status = 'PUBLISHED'
+    </select>
+
+    <select id="countFavorites" resultType="int">
+        SELECT COUNT(*)
+        FROM post_favorites
+        WHERE user_id = #{userId}
+    </select>
+
+    <select id="countHistory" resultType="int">
+        SELECT COUNT(*)
+        FROM post_view_history
+        WHERE user_id = #{userId}
+    </select>
+
+    <select id="countComments" resultType="int">
+        SELECT COUNT(*)
+        FROM comments
+        WHERE user_id = #{userId}
+          AND status = 'VISIBLE'
+    </select>
+
+    <select id="sumReceivedLikes" resultType="int">
+        SELECT COALESCE(SUM(like_count), 0)
+        FROM posts
+        WHERE author_id = #{userId}
+          AND status = 'PUBLISHED'
+    </select>
+
+    <select id="countFollowers" resultType="int">
+        SELECT COUNT(*)
+        FROM user_follows
+        WHERE following_id = #{userId}
+          AND status = 'ACTIVE'
+    </select>
+
+    <select id="countFollowing" resultType="int">
+        SELECT COUNT(*)
+        FROM user_follows
+        WHERE follower_id = #{userId}
+          AND status = 'ACTIVE'
+    </select>
+
+    <select id="countMutualFriends" resultType="int">
+        SELECT COUNT(*)
+        FROM user_follows a
+        JOIN user_follows b ON b.follower_id = a.following_id
+                           AND b.following_id = a.follower_id
+                           AND b.status = 'ACTIVE'
+        WHERE a.follower_id = #{userId}
+          AND a.status = 'ACTIVE'
+    </select>
+
+    <select id="countFriends" resultType="int">
+        SELECT COUNT(*)
+        FROM friendships
+        WHERE status = 'ACTIVE'
+          AND (user_low_id = #{userId} OR user_high_id = #{userId})
+    </select>
+
+    <select id="countFollow" resultType="int">
+        SELECT COUNT(*)
+        FROM user_follows
+        WHERE follower_id = #{followerId}
+          AND following_id = #{followingId}
+          AND status = 'ACTIVE'
+    </select>
+
+    <insert id="upsertFollow">
+        INSERT INTO user_follows (
+            follower_id,
+            following_id,
+            status
+        )
+        VALUES (
+            #{followerId},
+            #{followingId},
+            'ACTIVE'
+        )
+        ON DUPLICATE KEY UPDATE
+            status = 'ACTIVE',
+            created_time = CURRENT_TIMESTAMP
+    </insert>
+
+    <update id="inactivateFollow">
+        UPDATE user_follows
+        SET status = 'INACTIVE'
+        WHERE follower_id = #{followerId}
+          AND following_id = #{followingId}
+    </update>
+
+    <select id="selectFollowers" resultMap="SocialUserResultMap">
+        SELECT
+        <include refid="UserColumnsWithAlias"/>
+        FROM user_follows f
+        JOIN users u ON u.user_id = f.follower_id
+        WHERE f.following_id = #{userId}
+          AND f.status = 'ACTIVE'
+          AND u.status = 'ACTIVE'
+        ORDER BY f.created_time DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectFollowing" resultMap="SocialUserResultMap">
+        SELECT
+        <include refid="UserColumnsWithAlias"/>
+        FROM user_follows f
+        JOIN users u ON u.user_id = f.following_id
+        WHERE f.follower_id = #{userId}
+          AND f.status = 'ACTIVE'
+          AND u.status = 'ACTIVE'
+        ORDER BY f.created_time DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectFriends" resultMap="SocialUserResultMap">
+        SELECT
+        <include refid="UserColumnsWithAlias"/>
+        FROM friendships fs
+        JOIN users u ON u.user_id = CASE
+            WHEN fs.user_low_id = #{userId} THEN fs.user_high_id
+            ELSE fs.user_low_id
+        END
+        WHERE fs.status = 'ACTIVE'
+          AND (fs.user_low_id = #{userId} OR fs.user_high_id = #{userId})
+          AND u.status = 'ACTIVE'
+        ORDER BY fs.updated_time DESC, fs.created_time DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectActivities" resultType="map">
+        SELECT *
+        FROM (
+            SELECT
+                CONVERT(CONCAT('post:', p.post_id) USING utf8mb4) COLLATE utf8mb4_unicode_ci AS activityKey,
+                CONVERT('POST_PUBLISHED' USING utf8mb4) COLLATE utf8mb4_unicode_ci AS activityType,
+                CONVERT('POST' USING utf8mb4) COLLATE utf8mb4_unicode_ci AS targetType,
+                p.post_id AS targetId,
+                p.post_id AS postId,
+                CAST(NULL AS UNSIGNED) AS helpId,
+                CAST(NULL AS UNSIGNED) AS commentId,
+                CAST(NULL AS UNSIGNED) AS answerId,
+                CONVERT(COALESCE(requested.title, fallback.title, '') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS title,
+                CONVERT(COALESCE(requested.summary, fallback.summary, '') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS summary,
+                CONVERT(CAST(NULL AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci AS content,
+                CONVERT(COALESCE(requested.language_code, fallback.language_code, p.original_language) USING utf8mb4) COLLATE utf8mb4_unicode_ci AS languageCode,
+                CONVERT(COALESCE(cat.category_code, '') USING utf8mb4) COLLATE utf8mb4_unicode_ci AS categoryCode,
+                CONVERT(p.cover_image_url USING utf8mb4) COLLATE utf8mb4_unicode_ci AS coverImageUrl,
+                p.like_count AS likeCount,
+                p.favorite_count AS favoriteCount,
+                p.comment_count AS commentCount,
+                p.view_count AS viewCount,
+                p.created_time AS createdTime
+            FROM posts p
+            LEFT JOIN post_i18n requested ON requested.post_id = p.post_id AND requested.language_code = #{languageCode}
+            LEFT JOIN post_i18n fallback ON fallback.post_id = p.post_id AND fallback.language_code = p.original_language
+            LEFT JOIN categories cat ON cat.category_id = p.category_id
+            WHERE p.author_id = #{userId}
+              AND p.status = 'PUBLISHED'
+
+            UNION ALL
+
+            SELECT
+                CONCAT('help:', h.help_id) AS activityKey,
+                'HELP_ASKED' AS activityType,
+                'HELP' AS targetType,
+                h.help_id AS targetId,
+                CAST(NULL AS UNSIGNED) AS postId,
+                h.help_id AS helpId,
+                CAST(NULL AS UNSIGNED) AS commentId,
+                CAST(NULL AS UNSIGNED) AS answerId,
+                h.title AS title,
+                h.description AS summary,
+                CAST(NULL AS CHAR) AS content,
+                '' AS languageCode,
+                COALESCE(cat.category_code, '') AS categoryCode,
+                CAST(NULL AS CHAR) AS coverImageUrl,
+                0 AS likeCount,
+                0 AS favoriteCount,
+                0 AS commentCount,
+                0 AS viewCount,
+                h.created_time AS createdTime
+            FROM help_requests h
+            LEFT JOIN categories cat ON cat.category_id = h.category_id
+            WHERE h.user_id = #{userId}
+
+            UNION ALL
+
+            SELECT
+                CONCAT('answer:', ha.answer_id) AS activityKey,
+                'HELP_ANSWERED' AS activityType,
+                'HELP' AS targetType,
+                h.help_id AS targetId,
+                CAST(NULL AS UNSIGNED) AS postId,
+                h.help_id AS helpId,
+                CAST(NULL AS UNSIGNED) AS commentId,
+                ha.answer_id AS answerId,
+                h.title AS title,
+                h.description AS summary,
+                ha.content AS content,
+                '' AS languageCode,
+                COALESCE(cat.category_code, '') AS categoryCode,
+                CAST(NULL AS CHAR) AS coverImageUrl,
+                0 AS likeCount,
+                0 AS favoriteCount,
+                0 AS commentCount,
+                0 AS viewCount,
+                ha.created_time AS createdTime
+            FROM help_answers ha
+            JOIN help_requests h ON h.help_id = ha.help_id
+            LEFT JOIN categories cat ON cat.category_id = h.category_id
+            WHERE ha.user_id = #{userId}
+              AND ha.status = 'VISIBLE'
+
+            UNION ALL
+
+            SELECT
+                CONCAT('comment:', cm.comment_id) AS activityKey,
+                'COMMENTED' AS activityType,
+                'POST' AS targetType,
+                p.post_id AS targetId,
+                p.post_id AS postId,
+                CAST(NULL AS UNSIGNED) AS helpId,
+                cm.comment_id AS commentId,
+                CAST(NULL AS UNSIGNED) AS answerId,
+                COALESCE(requested.title, fallback.title, '') AS title,
+                COALESCE(requested.summary, fallback.summary, '') AS summary,
+                cm.content AS content,
+                COALESCE(requested.language_code, fallback.language_code, p.original_language) AS languageCode,
+                COALESCE(cat.category_code, '') AS categoryCode,
+                p.cover_image_url AS coverImageUrl,
+                p.like_count AS likeCount,
+                p.favorite_count AS favoriteCount,
+                p.comment_count AS commentCount,
+                p.view_count AS viewCount,
+                cm.created_time AS createdTime
+            FROM comments cm
+            JOIN posts p ON p.post_id = cm.post_id
+            LEFT JOIN post_i18n requested ON requested.post_id = p.post_id AND requested.language_code = #{languageCode}
+            LEFT JOIN post_i18n fallback ON fallback.post_id = p.post_id AND fallback.language_code = p.original_language
+            LEFT JOIN categories cat ON cat.category_id = p.category_id
+            WHERE cm.user_id = #{userId}
+              AND cm.status = 'VISIBLE'
+              AND p.status = 'PUBLISHED'
+
+            UNION ALL
+
+            SELECT
+                CONCAT('like:', pl.like_id) AS activityKey,
+                'LIKED_POST' AS activityType,
+                'POST' AS targetType,
+                p.post_id AS targetId,
+                p.post_id AS postId,
+                CAST(NULL AS UNSIGNED) AS helpId,
+                CAST(NULL AS UNSIGNED) AS commentId,
+                CAST(NULL AS UNSIGNED) AS answerId,
+                COALESCE(requested.title, fallback.title, '') AS title,
+                COALESCE(requested.summary, fallback.summary, '') AS summary,
+                CAST(NULL AS CHAR) AS content,
+                COALESCE(requested.language_code, fallback.language_code, p.original_language) AS languageCode,
+                COALESCE(cat.category_code, '') AS categoryCode,
+                p.cover_image_url AS coverImageUrl,
+                p.like_count AS likeCount,
+                p.favorite_count AS favoriteCount,
+                p.comment_count AS commentCount,
+                p.view_count AS viewCount,
+                pl.created_time AS createdTime
+            FROM post_likes pl
+            JOIN posts p ON p.post_id = pl.post_id
+            LEFT JOIN post_i18n requested ON requested.post_id = p.post_id AND requested.language_code = #{languageCode}
+            LEFT JOIN post_i18n fallback ON fallback.post_id = p.post_id AND fallback.language_code = p.original_language
+            LEFT JOIN categories cat ON cat.category_id = p.category_id
+            WHERE pl.user_id = #{userId}
+              AND p.status = 'PUBLISHED'
+
+            UNION ALL
+
+            SELECT
+                CONCAT('favorite:', pf.favorite_id) AS activityKey,
+                'FAVORITED_POST' AS activityType,
+                'POST' AS targetType,
+                p.post_id AS targetId,
+                p.post_id AS postId,
+                CAST(NULL AS UNSIGNED) AS helpId,
+                CAST(NULL AS UNSIGNED) AS commentId,
+                CAST(NULL AS UNSIGNED) AS answerId,
+                COALESCE(requested.title, fallback.title, '') AS title,
+                COALESCE(requested.summary, fallback.summary, '') AS summary,
+                CAST(NULL AS CHAR) AS content,
+                COALESCE(requested.language_code, fallback.language_code, p.original_language) AS languageCode,
+                COALESCE(cat.category_code, '') AS categoryCode,
+                p.cover_image_url AS coverImageUrl,
+                p.like_count AS likeCount,
+                p.favorite_count AS favoriteCount,
+                p.comment_count AS commentCount,
+                p.view_count AS viewCount,
+                pf.created_time AS createdTime
+            FROM post_favorites pf
+            JOIN posts p ON p.post_id = pf.post_id
+            LEFT JOIN post_i18n requested ON requested.post_id = p.post_id AND requested.language_code = #{languageCode}
+            LEFT JOIN post_i18n fallback ON fallback.post_id = p.post_id AND fallback.language_code = p.original_language
+            LEFT JOIN categories cat ON cat.category_id = p.category_id
+            WHERE pf.user_id = #{userId}
+              AND p.status = 'PUBLISHED'
+        ) user_activity
+        ORDER BY createdTime DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="countFriendship" resultType="int">
+        SELECT COUNT(*)
+        FROM friendships
+        WHERE user_low_id = #{userLowId}
+          AND user_high_id = #{userHighId}
+          AND status = 'ACTIVE'
+    </select>
+
+    <insert id="upsertFriendship">
+        INSERT INTO friendships (
+            user_low_id,
+            user_high_id,
+            status
+        )
+        VALUES (
+            #{userLowId},
+            #{userHighId},
+            'ACTIVE'
+        )
+        ON DUPLICATE KEY UPDATE
+            status = 'ACTIVE',
+            updated_time = CURRENT_TIMESTAMP
+    </insert>
+
+    <insert id="upsertFriendRequest">
+        INSERT INTO friend_requests (
+            requester_id,
+            addressee_id,
+            message,
+            status
+        )
+        VALUES (
+            #{requesterId},
+            #{addresseeId},
+            #{message},
+            'PENDING'
+        )
+        ON DUPLICATE KEY UPDATE
+            message = VALUES(message),
+            status = 'PENDING',
+            processed_time = NULL,
+            updated_time = CURRENT_TIMESTAMP
+    </insert>
+
+    <sql id="FriendRequestColumns">
+        fr.request_id AS requestId,
+        fr.requester_id AS requesterId,
+        requester.username AS requesterUsername,
+        COALESCE(NULLIF(requester.display_name, ''), requester.username) AS requesterDisplayName,
+        requester.avatar_url AS requesterAvatarUrl,
+        requester.community_level AS requesterCommunityLevel,
+        requester.bio AS requesterBio,
+        fr.addressee_id AS addresseeId,
+        addressee.username AS addresseeUsername,
+        COALESCE(NULLIF(addressee.display_name, ''), addressee.username) AS addresseeDisplayName,
+        addressee.avatar_url AS addresseeAvatarUrl,
+        addressee.community_level AS addresseeCommunityLevel,
+        addressee.bio AS addresseeBio,
+        fr.message AS message,
+        fr.status AS status,
+        fr.created_time AS createdTime,
+        fr.processed_time AS processedTime
+    </sql>
+
+    <select id="selectFriendRequestById" resultType="map">
+        SELECT
+        <include refid="FriendRequestColumns"/>
+        FROM friend_requests fr
+        JOIN users requester ON requester.user_id = fr.requester_id
+        JOIN users addressee ON addressee.user_id = fr.addressee_id
+        WHERE fr.request_id = #{requestId}
+    </select>
+
+    <select id="selectPendingFriendRequest" resultType="map">
+        SELECT
+        <include refid="FriendRequestColumns"/>
+        FROM friend_requests fr
+        JOIN users requester ON requester.user_id = fr.requester_id
+        JOIN users addressee ON addressee.user_id = fr.addressee_id
+        WHERE fr.requester_id = #{requesterId}
+          AND fr.addressee_id = #{addresseeId}
+          AND fr.status = 'PENDING'
+        LIMIT 1
+    </select>
+
+    <select id="selectIncomingFriendRequests" resultType="map">
+        SELECT
+        <include refid="FriendRequestColumns"/>
+        FROM friend_requests fr
+        JOIN users requester ON requester.user_id = fr.requester_id
+        JOIN users addressee ON addressee.user_id = fr.addressee_id
+        WHERE fr.addressee_id = #{userId}
+        <if test="status != null and status != '' and status != 'ALL'">
+            AND fr.status = #{status}
+        </if>
+        ORDER BY CASE WHEN fr.status = 'PENDING' THEN 0 ELSE 1 END, fr.created_time DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectOutgoingFriendRequests" resultType="map">
+        SELECT
+        <include refid="FriendRequestColumns"/>
+        FROM friend_requests fr
+        JOIN users requester ON requester.user_id = fr.requester_id
+        JOIN users addressee ON addressee.user_id = fr.addressee_id
+        WHERE fr.requester_id = #{userId}
+        <if test="status != null and status != '' and status != 'ALL'">
+            AND fr.status = #{status}
+        </if>
+        ORDER BY CASE WHEN fr.status = 'PENDING' THEN 0 ELSE 1 END, fr.created_time DESC
+        LIMIT #{limit}
+    </select>
+
+    <update id="updateFriendRequestStatus">
+        UPDATE friend_requests
+        SET
+            status = #{status},
+            processed_time = CURRENT_TIMESTAMP
+        WHERE request_id = #{requestId}
+    </update>
+
+    <insert id="insertFriendMessage">
+        INSERT INTO friend_messages (
+            sender_id,
+            receiver_id,
+            content
+        )
+        VALUES (
+            #{senderId},
+            #{receiverId},
+            #{content}
+        )
+    </insert>
+
+    <select id="selectFriendMessages" resultType="map">
+        SELECT
+            fm.message_id AS messageId,
+            fm.sender_id AS senderId,
+            sender.username AS senderUsername,
+            COALESCE(NULLIF(sender.display_name, ''), sender.username) AS senderDisplayName,
+            sender.avatar_url AS senderAvatarUrl,
+            fm.receiver_id AS receiverId,
+            receiver.username AS receiverUsername,
+            COALESCE(NULLIF(receiver.display_name, ''), receiver.username) AS receiverDisplayName,
+            receiver.avatar_url AS receiverAvatarUrl,
+            fm.content AS content,
+            fm.read_flag AS readFlag,
+            fm.created_time AS createdTime
+        FROM friend_messages fm
+        JOIN users sender ON sender.user_id = fm.sender_id
+        JOIN users receiver ON receiver.user_id = fm.receiver_id
+        WHERE (
+            fm.sender_id = #{userId}
+            AND fm.receiver_id = #{friendId}
+        ) OR (
+            fm.sender_id = #{friendId}
+            AND fm.receiver_id = #{userId}
+        )
+        ORDER BY fm.created_time DESC, fm.message_id DESC
+        LIMIT #{limit}
+    </select>
+
+    <update id="markMessagesRead">
+        UPDATE friend_messages
+        SET read_flag = 1
+        WHERE sender_id = #{friendId}
+          AND receiver_id = #{userId}
+          AND read_flag = 0
+    </update>
+</mapper>

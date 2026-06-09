@@ -1,0 +1,23 @@
+{
+  "name": "studyforge-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:portal": "npm --workspace @studyforge/portal-web run dev",
+    "dev:knowledge": "npm --workspace @studyforge/knowledge-web run dev",
+    "build:portal": "npm --workspace @studyforge/portal-web run build",
+    "build:knowledge": "npm --workspace @studyforge/knowledge-web run build",
+    "build": "npm run build:portal && npm run build:knowledge",
+    "typecheck": "npm --workspace @studyforge/portal-web run typecheck && npm --workspace @studyforge/knowledge-web run typecheck",
+    "test:portal": "npm --workspace @studyforge/portal-web run test",
+    "test:knowledge": "npm --workspace @studyforge/knowledge-web run test",
+    "test": "npm run test:portal && npm run test:knowledge"
+  },
+  "engines": {
+    "node": ">=20.19.0"
+  }
+}

@@ -1,0 +1,26 @@
+package com.studyforge.system.vo;
+
+public record UserProfileVO(Long userId,
+                            String username,
+                            String email,
+                            String displayName,
+                            String bio,
+                            String avatarUrl,
+                            String bannerUrl,
+                            int communityLevel,
+                            int experiencePoints,
+                            int nextLevelExperience,
+                            int reputationScore,
+                            int postCount,
+                            int favoriteCount,
+                            int historyCount,
+                            int followerCount,
+                            int followingCount,
+                            int friendCount,
+                            int commentCount,
+                            int receivedLikeCount,
+                            boolean followedByViewer,
+                            String friendStatus,
+                            Long friendRequestId,
+                            boolean self) {
+}

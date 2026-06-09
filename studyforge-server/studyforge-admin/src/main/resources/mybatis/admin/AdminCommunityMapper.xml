@@ -1,0 +1,277 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.studyforge.admin.mapper.AdminCommunityMapper">
+    <select id="selectOverview" resultType="map">
+        SELECT
+            (SELECT COUNT(*) FROM users) AS totalUsers,
+            (SELECT COUNT(*) FROM users WHERE status = 'ACTIVE') AS activeUsers,
+            (SELECT COUNT(*) FROM posts) AS totalPosts,
+            (SELECT COUNT(*) FROM posts WHERE status = 'PUBLISHED') AS publishedPosts,
+            (SELECT COUNT(*) FROM posts WHERE status = 'ARCHIVED') AS archivedPosts,
+            (SELECT COUNT(*) FROM posts WHERE featured = 1) AS featuredPosts,
+            (SELECT COUNT(*) FROM reports WHERE status = 'PENDING') AS pendingReports,
+            (SELECT COUNT(*) FROM reports WHERE status &lt;&gt; 'PENDING') AS processedReports
+    </select>
+
+    <sql id="AdminPostColumns">
+        p.post_id AS postId,
+        p.author_id AS authorId,
+        COALESCE(NULLIF(u.display_name, ''), u.username) AS authorName,
+        pi.title AS title,
+        pi.summary AS summary,
+        pi.content AS content,
+        pi.language_code AS languageCode,
+        c.category_code AS categoryCode,
+        p.status AS status,
+        p.featured AS featured,
+        p.cover_image_url AS coverImageUrl,
+        p.like_count AS likeCount,
+        p.favorite_count AS favoriteCount,
+        p.comment_count AS commentCount,
+        p.view_count AS viewCount,
+        p.hot_score AS hotScore,
+        p.created_time AS createdTime,
+        p.updated_time AS updatedTime
+    </sql>
+
+    <select id="selectPosts" resultType="map">
+        SELECT
+        <include refid="AdminPostColumns"/>
+        FROM posts p
+        JOIN users u ON u.user_id = p.author_id
+        JOIN categories c ON c.category_id = p.category_id
+        LEFT JOIN post_i18n pi ON pi.post_id = p.post_id AND pi.language_code = p.original_language
+        WHERE 1 = 1
+        <if test="status != null and status != '' and status != 'ALL'">
+            AND p.status = #{status}
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND (
+                pi.title LIKE CONCAT('%', #{keyword}, '%')
+                OR pi.summary LIKE CONCAT('%', #{keyword}, '%')
+                OR u.username LIKE CONCAT('%', #{keyword}, '%')
+                OR u.display_name LIKE CONCAT('%', #{keyword}, '%')
+            )
+        </if>
+        ORDER BY p.featured DESC, p.updated_time DESC, p.post_id DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectPostById" resultType="map">
+        SELECT
+        <include refid="AdminPostColumns"/>
+        FROM posts p
+        JOIN users u ON u.user_id = p.author_id
+        JOIN categories c ON c.category_id = p.category_id
+        LEFT JOIN post_i18n pi ON pi.post_id = p.post_id AND pi.language_code = p.original_language
+        WHERE p.post_id = #{postId}
+    </select>
+
+    <update id="updatePostFeatured">
+        UPDATE posts
+        SET featured = #{featured}
+        WHERE post_id = #{postId}
+    </update>
+
+    <update id="updatePostStatus">
+        UPDATE posts
+        SET status = #{status}
+        WHERE post_id = #{postId}
+    </update>
+
+    <insert id="insertReport" parameterType="map" useGeneratedKeys="true" keyProperty="reportId">
+        INSERT INTO reports (
+            post_id,
+            reporter_id,
+            reason,
+            status,
+            ai_risk_level,
+            ai_suggestion
+        )
+        VALUES (
+            #{postId},
+            #{reporterId},
+            #{reason},
+            'PENDING',
+            #{aiRiskLevel},
+            #{aiSuggestion}
+        )
+    </insert>
+
+    <sql id="ReportColumns">
+        r.report_id AS reportId,
+        r.post_id AS postId,
+        pi.title AS postTitle,
+        p.status AS postStatus,
+        r.reporter_id AS reporterId,
+        COALESCE(NULLIF(reporter.display_name, ''), reporter.username) AS reporterName,
+        r.reason AS reason,
+        r.status AS status,
+        r.ai_risk_level AS aiRiskLevel,
+        r.ai_suggestion AS aiSuggestion,
+        r.processed_by AS processedBy,
+        COALESCE(NULLIF(processor.display_name, ''), processor.username) AS processedByName,
+        r.processed_time AS processedTime,
+        r.created_time AS createdTime
+    </sql>
+
+    <select id="selectReportById" resultType="map">
+        SELECT
+        <include refid="ReportColumns"/>
+        FROM reports r
+        JOIN posts p ON p.post_id = r.post_id
+        JOIN users reporter ON reporter.user_id = r.reporter_id
+        LEFT JOIN users processor ON processor.user_id = r.processed_by
+        LEFT JOIN post_i18n pi ON pi.post_id = p.post_id AND pi.language_code = p.original_language
+        WHERE r.report_id = #{reportId}
+    </select>
+
+    <select id="selectReports" resultType="map">
+        SELECT
+        <include refid="ReportColumns"/>
+        FROM reports r
+        JOIN posts p ON p.post_id = r.post_id
+        JOIN users reporter ON reporter.user_id = r.reporter_id
+        LEFT JOIN users processor ON processor.user_id = r.processed_by
+        LEFT JOIN post_i18n pi ON pi.post_id = p.post_id AND pi.language_code = p.original_language
+        WHERE 1 = 1
+        <if test="status != null and status != '' and status != 'ALL'">
+            AND r.status = #{status}
+        </if>
+        ORDER BY CASE WHEN r.status = 'PENDING' THEN 0 ELSE 1 END, r.created_time DESC
+        LIMIT #{limit}
+    </select>
+
+    <update id="updateReport">
+        UPDATE reports
+        SET
+            status = #{status},
+            processed_by = #{processedBy},
+            processed_time = CURRENT_TIMESTAMP
+        WHERE report_id = #{reportId}
+    </update>
+
+    <sql id="AdminUserColumns">
+        u.user_id AS userId,
+        u.username AS username,
+        u.display_name AS displayName,
+        u.email AS email,
+        u.role AS role,
+        u.status AS status,
+        u.community_level AS communityLevel,
+        u.experience_points AS experiencePoints,
+        u.reputation_score AS reputationScore,
+        (SELECT COUNT(*) FROM posts p WHERE p.author_id = u.user_id) AS postCount,
+        (SELECT COUNT(*) FROM comments c WHERE c.user_id = u.user_id AND c.status = 'VISIBLE') AS commentCount,
+        (SELECT COUNT(*) FROM post_favorites f WHERE f.user_id = u.user_id) AS favoriteCount,
+        (SELECT COUNT(*) FROM user_follows f WHERE f.following_id = u.user_id AND f.status = 'ACTIVE') AS followerCount,
+        u.created_time AS createdTime
+    </sql>
+
+    <select id="selectUsers" resultType="map">
+        SELECT
+        <include refid="AdminUserColumns"/>
+        FROM users u
+        WHERE 1 = 1
+        <if test="status != null and status != '' and status != 'ALL'">
+            AND u.status = #{status}
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND (
+                u.username LIKE CONCAT('%', #{keyword}, '%')
+                OR u.display_name LIKE CONCAT('%', #{keyword}, '%')
+                OR u.email LIKE CONCAT('%', #{keyword}, '%')
+            )
+        </if>
+        ORDER BY u.created_time DESC, u.user_id DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectUserById" resultType="map">
+        SELECT
+        <include refid="AdminUserColumns"/>
+        FROM users u
+        WHERE u.user_id = #{userId}
+    </select>
+
+    <select id="selectUserDetailById" resultType="map">
+        SELECT
+            u.user_id AS userId,
+            u.username AS username,
+            u.display_name AS displayName,
+            u.email AS email,
+            u.role AS role,
+            u.status AS status,
+            u.bio AS bio,
+            u.avatar_url AS avatarUrl,
+            u.banner_url AS bannerUrl,
+            u.community_level AS communityLevel,
+            u.experience_points AS experiencePoints,
+            u.last_login_reward_date AS lastLoginRewardDate,
+            u.reputation_score AS reputationScore,
+            (SELECT COUNT(*) FROM posts p WHERE p.author_id = u.user_id) AS postCount,
+            (SELECT COUNT(*) FROM posts p WHERE p.author_id = u.user_id AND p.status = 'PUBLISHED') AS publishedPostCount,
+            (SELECT COUNT(*) FROM posts p WHERE p.author_id = u.user_id AND p.status = 'ARCHIVED') AS archivedPostCount,
+            (SELECT COUNT(*) FROM comments c WHERE c.user_id = u.user_id AND c.status = 'VISIBLE') AS commentCount,
+            (SELECT COUNT(*) FROM post_likes l WHERE l.user_id = u.user_id) AS likeCount,
+            (SELECT COUNT(*) FROM post_favorites f WHERE f.user_id = u.user_id) AS favoriteCount,
+            (SELECT COUNT(*) FROM favorite_collections fc WHERE fc.user_id = u.user_id) AS collectionCount,
+            (SELECT COUNT(*) FROM post_view_history vh WHERE vh.user_id = u.user_id) AS historyCount,
+            (SELECT COUNT(*) FROM user_follows f WHERE f.following_id = u.user_id AND f.status = 'ACTIVE') AS followerCount,
+            (SELECT COUNT(*) FROM user_follows f WHERE f.follower_id = u.user_id AND f.status = 'ACTIVE') AS followingCount,
+            (SELECT COUNT(*) FROM friendships fs WHERE fs.status = 'ACTIVE' AND (fs.user_low_id = u.user_id OR fs.user_high_id = u.user_id)) AS friendCount,
+            (SELECT COUNT(*) FROM friend_requests fr WHERE fr.addressee_id = u.user_id AND fr.status = 'PENDING') AS incomingFriendRequestCount,
+            (SELECT COUNT(*) FROM friend_requests fr WHERE fr.requester_id = u.user_id AND fr.status = 'PENDING') AS outgoingFriendRequestCount,
+            (SELECT COUNT(*) FROM friend_messages fm WHERE fm.sender_id = u.user_id) AS sentMessageCount,
+            (SELECT COUNT(*) FROM friend_messages fm WHERE fm.receiver_id = u.user_id) AS receivedMessageCount,
+            (SELECT COUNT(*) FROM help_requests h WHERE h.user_id = u.user_id) AS helpRequestCount,
+            (SELECT COUNT(*) FROM help_answers ha WHERE ha.user_id = u.user_id AND ha.status = 'VISIBLE') AS helpAnswerCount,
+            (SELECT COUNT(*) FROM help_answers ha WHERE ha.user_id = u.user_id AND ha.status = 'VISIBLE' AND ha.is_accepted = 1) AS acceptedAnswerCount,
+            (SELECT COUNT(*) FROM reports r WHERE r.reporter_id = u.user_id) AS reportCount,
+            (SELECT COUNT(*) FROM reports r JOIN posts p ON p.post_id = r.post_id WHERE p.author_id = u.user_id) AS reportedPostCount,
+            (SELECT COUNT(*) FROM uploaded_files uf WHERE uf.user_id = u.user_id AND uf.status = 'ACTIVE') AS uploadCount,
+            (SELECT COUNT(*) FROM ai_logs al WHERE al.user_id = u.user_id) AS aiCallCount,
+            (SELECT COUNT(*) FROM ai_logs al WHERE al.user_id = u.user_id AND al.success = 1) AS aiSuccessCount,
+            (SELECT COUNT(*) FROM voice_records vr WHERE vr.user_id = u.user_id) AS voiceRecordCount,
+            (SELECT COUNT(*) FROM user_tokens ut WHERE ut.user_id = u.user_id AND ut.status = 'ACTIVE' AND ut.expire_time > CURRENT_TIMESTAMP) AS activeTokenCount,
+            (SELECT COUNT(*) FROM user_experience_logs el WHERE el.user_id = u.user_id) AS experienceLogCount,
+            (SELECT MAX(p.created_time) FROM posts p WHERE p.author_id = u.user_id) AS lastPostTime,
+            (SELECT MAX(c.created_time) FROM comments c WHERE c.user_id = u.user_id AND c.status = 'VISIBLE') AS lastCommentTime,
+            (SELECT MAX(help_activity.activity_time) FROM (
+                SELECT h.user_id AS user_id, h.created_time AS activity_time FROM help_requests h
+                UNION ALL
+                SELECT ha.user_id AS user_id, ha.created_time AS activity_time FROM help_answers ha WHERE ha.status = 'VISIBLE'
+            ) help_activity WHERE help_activity.user_id = u.user_id) AS lastHelpTime,
+            (SELECT MAX(al.created_time) FROM ai_logs al WHERE al.user_id = u.user_id) AS lastAiCallTime,
+            (SELECT MAX(vr.created_time) FROM voice_records vr WHERE vr.user_id = u.user_id) AS lastVoiceTime,
+            u.created_time AS createdTime,
+            u.updated_time AS updatedTime
+        FROM users u
+        WHERE u.user_id = #{userId}
+    </select>
+
+    <update id="updateUserStatus">
+        UPDATE users
+        SET status = #{status}
+        WHERE user_id = #{userId}
+    </update>
+
+    <insert id="insertAudit">
+        INSERT INTO admin_audit_logs (
+            admin_id,
+            target_type,
+            target_id,
+            action_type,
+            remark
+        )
+        VALUES (
+            #{adminId},
+            #{targetType},
+            #{targetId},
+            #{actionType},
+            #{remark}
+        )
+    </insert>
+</mapper>

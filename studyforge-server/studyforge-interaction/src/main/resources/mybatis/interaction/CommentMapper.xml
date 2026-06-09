@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.studyforge.interaction.mapper.CommentMapper">
+    <resultMap id="CommentResultMap" type="com.studyforge.interaction.entity.Comment">
+        <id column="comment_id" property="commentId"/>
+        <result column="post_id" property="postId"/>
+        <result column="parent_comment_id" property="parentCommentId"/>
+        <result column="user_id" property="userId"/>
+        <result column="language_code" property="languageCode"/>
+        <result column="content" property="content"/>
+        <result column="status" property="status"/>
+        <result column="floor_no" property="floorNo"/>
+        <result column="like_count" property="likeCount"/>
+        <result column="created_time" property="createdTime"/>
+        <result column="updated_time" property="updatedTime"/>
+        <result column="author_username" property="authorUsername"/>
+        <result column="author_name" property="authorName"/>
+        <result column="author_avatar_url" property="authorAvatarUrl"/>
+        <result column="parent_user_id" property="parentUserId"/>
+        <result column="parent_author_username" property="parentAuthorUsername"/>
+        <result column="parent_author_name" property="parentAuthorName"/>
+        <result column="liked_by_viewer" property="likedByViewer"/>
+    </resultMap>
+
+    <sql id="CommentColumns">
+        c.comment_id,
+        c.post_id,
+        c.parent_comment_id,
+        c.user_id,
+        c.language_code,
+        c.content,
+        c.status,
+        c.floor_no,
+        c.like_count,
+        c.created_time,
+        c.updated_time,
+        author.username AS author_username,
+        COALESCE(NULLIF(author.display_name, ''), author.username) AS author_name,
+        author.avatar_url AS author_avatar_url,
+        parent.user_id AS parent_user_id,
+        parent_author.username AS parent_author_username,
+        COALESCE(NULLIF(parent_author.display_name, ''), parent_author.username) AS parent_author_name,
+        CASE
+            WHEN #{viewerId} IS NOT NULL
+             AND EXISTS (
+                SELECT 1
+                FROM comment_likes liked
+                WHERE liked.comment_id = c.comment_id
+                  AND liked.user_id = #{viewerId}
+             )
+            THEN 1
+            ELSE 0
+        END AS liked_by_viewer
+    </sql>
+
+    <select id="selectById" resultMap="CommentResultMap">
+        SELECT
+            comment_id,
+            post_id,
+            parent_comment_id,
+            user_id,
+            language_code,
+            content,
+            status,
+            floor_no,
+            like_count,
+            created_time,
+            updated_time
+        FROM comments
+        WHERE comment_id = #{commentId}
+    </select>
+
+    <select id="selectByIdForViewer" resultMap="CommentResultMap">
+        SELECT
+        <include refid="CommentColumns"/>
+        FROM comments c
+        JOIN users author ON author.user_id = c.user_id
+        LEFT JOIN comments parent ON parent.comment_id = c.parent_comment_id
+        LEFT JOIN users parent_author ON parent_author.user_id = parent.user_id
+        WHERE c.comment_id = #{commentId}
+    </select>
+
+    <select id="selectByPostIdForViewer" resultMap="CommentResultMap">
+        SELECT
+        <include refid="CommentColumns"/>
+        FROM comments c
+        JOIN users author ON author.user_id = c.user_id
+        LEFT JOIN comments parent ON parent.comment_id = c.parent_comment_id
+        LEFT JOIN users parent_author ON parent_author.user_id = parent.user_id
+        WHERE c.post_id = #{postId}
+          AND c.status IN ('VISIBLE', 'DELETED')
+        ORDER BY c.floor_no ASC, c.created_time ASC, c.comment_id ASC
+    </select>
+
+    <select id="nextFloorNo" resultType="int">
+        SELECT COALESCE(MAX(floor_no), 0) + 1
+        FROM comments
+        WHERE post_id = #{postId}
+    </select>
+
+    <insert id="insert" parameterType="com.studyforge.interaction.entity.Comment" useGeneratedKeys="true" keyProperty="commentId">
+        INSERT INTO comments (
+            post_id,
+            parent_comment_id,
+            user_id,
+            language_code,
+            content,
+            status,
+            floor_no,
+            like_count
+        )
+        VALUES (
+            #{postId},
+            #{parentCommentId},
+            #{userId},
+            #{languageCode},
+            #{content},
+            #{status},
+            #{floorNo},
+            COALESCE(#{likeCount}, 0)
+        )
+    </insert>
+
+    <update id="markDeleted">
+        UPDATE comments
+        SET status = 'DELETED'
+        WHERE comment_id = #{commentId}
+          AND status = 'VISIBLE'
+    </update>
+
+    <update id="incrementLikeCount">
+        UPDATE comments
+        SET like_count = GREATEST(0, like_count + #{delta})
+        WHERE comment_id = #{commentId}
+    </update>
+
+    <select id="countLike" resultType="int">
+        SELECT COUNT(*)
+        FROM comment_likes
+        WHERE comment_id = #{commentId}
+          AND user_id = #{userId}
+    </select>
+
+    <insert id="insertLike">
+        INSERT IGNORE INTO comment_likes (comment_id, user_id)
+        VALUES (#{commentId}, #{userId})
+    </insert>
+
+    <delete id="deleteLike">
+        DELETE FROM comment_likes
+        WHERE comment_id = #{commentId}
+          AND user_id = #{userId}
+    </delete>
+</mapper>

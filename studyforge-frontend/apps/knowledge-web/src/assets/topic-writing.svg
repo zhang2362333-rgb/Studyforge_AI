@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="460" viewBox="0 0 720 460" role="img" aria-label="Language writing desk illustration">
+  <defs>
+    <linearGradient id="write-bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#fff7ed"/>
+      <stop offset="0.5" stop-color="#f8fafc"/>
+      <stop offset="1" stop-color="#eff6ff"/>
+    </linearGradient>
+    <filter id="write-shadow" x="-15%" y="-20%" width="130%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="16" flood-color="#0f172a" flood-opacity="0.14"/>
+    </filter>
+  </defs>
+  <rect width="720" height="460" rx="28" fill="url(#write-bg)"/>
+  <g filter="url(#write-shadow)">
+    <rect x="96" y="70" width="528" height="318" rx="24" fill="#ffffff" stroke="#d7e3e8"/>
+    <rect x="138" y="112" width="160" height="18" rx="9" fill="#b45309"/>
+    <rect x="138" y="154" width="368" height="14" rx="7" fill="#d7e3e8"/>
+    <rect x="138" y="184" width="308" height="14" rx="7" fill="#e7eef2"/>
+    <g transform="translate(134 244)">
+      <rect width="190" height="86" rx="18" fill="#fff7ed" stroke="#fed7aa"/>
+      <path d="M40 53h86M40 29h118" stroke="#b45309" stroke-width="12" stroke-linecap="round"/>
+      <circle cx="152" cy="54" r="14" fill="#fdba74"/>
+    </g>
+    <g transform="translate(374 238)">
+      <path d="M40 82 138 18l28 42-98 64-38 6z" fill="#2563eb"/>
+      <path d="m138 18 28 42 18-12-28-42z" fill="#93c5fd"/>
+      <path d="m30 130 38-6-28-42z" fill="#f97316"/>
+      <rect x="22" y="144" width="182" height="10" rx="5" fill="#d7e3e8"/>
+    </g>
+  </g>
+</svg>

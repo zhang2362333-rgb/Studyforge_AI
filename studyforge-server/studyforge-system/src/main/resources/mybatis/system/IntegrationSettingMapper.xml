@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.studyforge.system.mapper.IntegrationSettingMapper">
+    <resultMap id="IntegrationSettingResultMap" type="com.studyforge.system.entity.IntegrationSetting">
+        <id column="setting_key" property="settingKey"/>
+        <result column="setting_value" property="settingValue"/>
+        <result column="secret_flag" property="secretFlag"/>
+        <result column="updated_by" property="updatedBy"/>
+        <result column="created_time" property="createdTime"/>
+        <result column="updated_time" property="updatedTime"/>
+    </resultMap>
+
+    <select id="selectByKey" parameterType="string" resultMap="IntegrationSettingResultMap">
+        SELECT
+            setting_key,
+            setting_value,
+            secret_flag,
+            updated_by,
+            created_time,
+            updated_time
+        FROM integration_settings
+        WHERE setting_key = #{settingKey}
+        LIMIT 1
+    </select>
+
+    <select id="selectAll" resultMap="IntegrationSettingResultMap">
+        SELECT
+            setting_key,
+            setting_value,
+            secret_flag,
+            updated_by,
+            created_time,
+            updated_time
+        FROM integration_settings
+        ORDER BY setting_key
+    </select>
+
+    <insert id="upsert">
+        INSERT INTO integration_settings (
+            setting_key,
+            setting_value,
+            secret_flag,
+            updated_by
+        )
+        VALUES (
+            #{setting.settingKey},
+            #{setting.settingValue},
+            #{setting.secretFlag},
+            #{setting.updatedBy}
+        )
+        ON DUPLICATE KEY UPDATE
+            setting_value = VALUES(setting_value),
+            secret_flag = VALUES(secret_flag),
+            updated_by = VALUES(updated_by)
+    </insert>
+</mapper>

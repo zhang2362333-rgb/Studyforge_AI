@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="
+           http://www.springframework.org/schema/beans https://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.springframework.org/schema/mvc https://www.springframework.org/schema/mvc/spring-mvc.xsd">
+
+    <mvc:annotation-driven/>
+
+    <bean id="multipartResolver" class="org.springframework.web.multipart.support.StandardServletMultipartResolver"/>
+
+    <mvc:cors>
+        <mvc:mapping path="/api/v1/**"
+                     allowed-origin-patterns="*"
+                     allowed-methods="GET,POST,PUT,DELETE,OPTIONS"
+                     allowed-headers="*"
+                     allow-credentials="true"
+                     max-age="3600"/>
+    </mvc:cors>
+
+    <mvc:interceptors>
+        <mvc:interceptor>
+            <mvc:mapping path="/api/v1/admin/**"/>
+            <bean class="com.studyforge.framework.web.AdminInterceptor">
+                <constructor-arg ref="authServiceImpl"/>
+            </bean>
+        </mvc:interceptor>
+        <mvc:interceptor>
+            <mvc:mapping path="/api/v1/**"/>
+            <mvc:exclude-mapping path="/api/v1/health"/>
+            <mvc:exclude-mapping path="/api/v1/auth/login"/>
+            <mvc:exclude-mapping path="/api/v1/auth/register"/>
+            <mvc:exclude-mapping path="/api/v1/posts/**"/>
+            <mvc:exclude-mapping path="/api/v1/users/*/profile"/>
+            <mvc:exclude-mapping path="/api/v1/users/*/posts"/>
+            <mvc:exclude-mapping path="/api/v1/users/*/activities"/>
+            <mvc:exclude-mapping path="/api/v1/users/*/followers"/>
+            <mvc:exclude-mapping path="/api/v1/users/*/following"/>
+            <mvc:exclude-mapping path="/api/v1/users/*/friends"/>
+            <mvc:exclude-mapping path="/api/v1/files/**"/>
+            <mvc:exclude-mapping path="/api/v1/help"/>
+            <mvc:exclude-mapping path="/api/v1/help/**"/>
+            <bean class="com.studyforge.framework.web.LoginInterceptor">
+                <constructor-arg ref="authServiceImpl"/>
+            </bean>
+        </mvc:interceptor>
+    </mvc:interceptors>
+</beans>

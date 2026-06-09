@@ -1,0 +1,22 @@
+[Unit]
+Description=StudyForge AI Spring MVC API
+After=network.target mariadb.service mysql.service
+
+[Service]
+Type=simple
+User=studyforge
+WorkingDirectory=/opt/studyforge/current/studyforge-server
+Environment=JDBC_URL=jdbc:mysql://127.0.0.1:3306/studyforge_ai?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+Environment=JDBC_USERNAME=studyforge
+Environment=JDBC_PASSWORD=change-this-password
+Environment=JDBC_MAXIMUM_POOL_SIZE=20
+Environment=JDBC_MINIMUM_IDLE=4
+Environment=STUDYFORGE_UPLOAD_DIR=/var/lib/studyforge/uploads
+Environment=http_proxy=
+Environment=https_proxy=
+ExecStart=/usr/bin/mvn -pl studyforge-webapi -am -DskipTests -Djetty.http.port=8080 org.eclipse.jetty.ee10:jetty-ee10-maven-plugin:12.1.9:run
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

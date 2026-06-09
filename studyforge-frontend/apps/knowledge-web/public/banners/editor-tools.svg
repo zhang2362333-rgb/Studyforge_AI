@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="360" viewBox="0 0 1200 360" role="img" aria-label="Editor tools banner">
+  <defs><linearGradient id="g" x1="0" x2="1"><stop stop-color="#f5f3ff"/><stop offset="1" stop-color="#fdf2f8"/></linearGradient></defs>
+  <rect width="1200" height="360" fill="url(#g)"/>
+  <g fill="#7c3aed" opacity=".14"><rect x="120" y="70" width="430" height="220" rx="22"/><rect x="630" y="70" width="430" height="220" rx="22"/></g>
+  <path d="M170 122h320M170 170h240M680 122h300M680 170h250M680 218h180" stroke="#ec4899" stroke-opacity=".24" stroke-width="9" stroke-linecap="round"/>
+</svg>

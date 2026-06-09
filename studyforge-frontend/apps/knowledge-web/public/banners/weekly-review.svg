@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="360" viewBox="0 0 1200 360" role="img" aria-label="Weekly review banner">
+  <defs><linearGradient id="g" x1="0" x2="1"><stop stop-color="#ecfeff"/><stop offset="1" stop-color="#f0fdf4"/></linearGradient></defs>
+  <rect width="1200" height="360" fill="url(#g)"/>
+  <g fill="none" stroke="#0891b2" stroke-opacity=".23" stroke-width="3"><path d="M170 92h860v170H170z"/><path d="M170 140h860M170 188h860M170 236h860M342 92v170M514 92v170M686 92v170M858 92v170"/></g>
+  <circle cx="420" cy="164" r="16" fill="#22c55e" opacity=".35"/>
+</svg>

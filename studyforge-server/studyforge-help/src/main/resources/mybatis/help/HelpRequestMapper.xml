@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.studyforge.help.mapper.HelpRequestMapper">
+    <resultMap id="HelpRequestResultMap" type="com.studyforge.help.entity.HelpRequest">
+        <id column="help_id" property="helpId"/>
+        <result column="user_id" property="userId"/>
+        <result column="title" property="title"/>
+        <result column="description" property="description"/>
+        <result column="category_id" property="categoryId"/>
+        <result column="status" property="status"/>
+        <result column="reward_points" property="rewardPoints"/>
+        <result column="created_time" property="createdTime"/>
+    </resultMap>
+
+    <select id="selectById" resultMap="HelpRequestResultMap">
+        SELECT
+            help_id,
+            user_id,
+            title,
+            description,
+            category_id,
+            status,
+            reward_points,
+            created_time
+        FROM help_requests
+        WHERE help_id = #{helpId}
+    </select>
+
+    <select id="selectList" resultMap="HelpRequestResultMap">
+        SELECT
+            help_id,
+            user_id,
+            title,
+            description,
+            category_id,
+            status,
+            reward_points,
+            created_time
+        FROM help_requests
+        WHERE 1 = 1
+        <if test="status != null and status != ''">
+            AND status = #{status}
+        </if>
+        ORDER BY created_time DESC
+        LIMIT #{limit}
+    </select>
+
+    <insert id="insert" parameterType="com.studyforge.help.entity.HelpRequest" useGeneratedKeys="true" keyProperty="helpId">
+        INSERT INTO help_requests (
+            user_id,
+            title,
+            description,
+            category_id,
+            status,
+            reward_points
+        )
+        VALUES (
+            #{userId},
+            #{title},
+            #{description},
+            #{categoryId},
+            #{status},
+            #{rewardPoints}
+        )
+    </insert>
+
+    <update id="updateStatus">
+        UPDATE help_requests
+        SET status = #{status}
+        WHERE help_id = #{helpId}
+    </update>
+</mapper>

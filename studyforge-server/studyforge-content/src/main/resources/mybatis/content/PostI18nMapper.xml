@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.studyforge.content.mapper.PostI18nMapper">
+    <resultMap id="PostI18nResultMap" type="com.studyforge.content.entity.PostI18n">
+        <id column="id" property="id"/>
+        <result column="post_id" property="postId"/>
+        <result column="language_code" property="languageCode"/>
+        <result column="title" property="title"/>
+        <result column="summary" property="summary"/>
+        <result column="content" property="content"/>
+        <result column="content_format" property="contentFormat"/>
+        <result column="ai_tags" property="aiTags"/>
+        <result column="source_type" property="sourceType"/>
+    </resultMap>
+
+    <sql id="PostI18nColumns">
+        id,
+        post_id,
+        language_code,
+        title,
+        summary,
+        content,
+        content_format,
+        ai_tags,
+        source_type
+    </sql>
+
+    <select id="selectByPostId" parameterType="long" resultMap="PostI18nResultMap">
+        SELECT
+        <include refid="PostI18nColumns"/>
+        FROM post_i18n
+        WHERE post_id = #{postId}
+        ORDER BY language_code
+    </select>
+
+    <select id="selectByPostIdAndLanguage" resultMap="PostI18nResultMap">
+        SELECT
+        <include refid="PostI18nColumns"/>
+        FROM post_i18n
+        WHERE post_id = #{postId}
+          AND language_code = #{languageCode}
+        LIMIT 1
+    </select>
+
+    <insert id="insert" parameterType="com.studyforge.content.entity.PostI18n" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO post_i18n (
+            post_id,
+            language_code,
+            title,
+            summary,
+            content,
+            content_format,
+            ai_tags,
+            source_type
+        )
+        VALUES (
+            #{postId},
+            #{languageCode},
+            #{title},
+            #{summary},
+            #{content},
+            #{contentFormat},
+            #{aiTags},
+            #{sourceType}
+        )
+    </insert>
+
+    <update id="updateById" parameterType="com.studyforge.content.entity.PostI18n">
+        UPDATE post_i18n
+        SET
+            language_code = #{languageCode},
+            title = #{title},
+            summary = #{summary},
+            content = #{content},
+            content_format = #{contentFormat},
+            ai_tags = #{aiTags},
+            source_type = #{sourceType}
+        WHERE id = #{id}
+    </update>
+</mapper>

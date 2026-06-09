@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.studyforge.system.mapper.UserMapper">
+    <resultMap id="UserResultMap" type="com.studyforge.system.entity.User">
+        <id column="user_id" property="userId"/>
+        <result column="username" property="username"/>
+        <result column="display_name" property="displayName"/>
+        <result column="email" property="email"/>
+        <result column="password_hash" property="passwordHash"/>
+        <result column="role" property="role"/>
+        <result column="status" property="status"/>
+        <result column="bio" property="bio"/>
+        <result column="avatar_url" property="avatarUrl"/>
+        <result column="banner_url" property="bannerUrl"/>
+        <result column="community_level" property="communityLevel"/>
+        <result column="experience_points" property="experiencePoints"/>
+        <result column="last_login_reward_date" property="lastLoginRewardDate"/>
+        <result column="reputation_score" property="reputationScore"/>
+        <result column="created_time" property="createdTime"/>
+    </resultMap>
+
+    <sql id="UserColumns">
+        user_id,
+        username,
+        display_name,
+        email,
+        password_hash,
+        role,
+        status,
+        bio,
+        avatar_url,
+        banner_url,
+        community_level,
+        experience_points,
+        last_login_reward_date,
+        reputation_score,
+        created_time
+    </sql>
+
+    <select id="selectById" parameterType="long" resultMap="UserResultMap">
+        SELECT
+        <include refid="UserColumns"/>
+        FROM users
+        WHERE user_id = #{userId}
+    </select>
+
+    <select id="selectByAccount" parameterType="string" resultMap="UserResultMap">
+        SELECT
+        <include refid="UserColumns"/>
+        FROM users
+        WHERE username = #{account}
+           OR email = #{account}
+        LIMIT 1
+    </select>
+
+    <select id="selectMentionCandidates" resultMap="UserResultMap">
+        SELECT
+        <include refid="UserColumns"/>
+        FROM users
+        WHERE status = 'ACTIVE'
+          AND (
+            LOWER(username) IN
+            <foreach collection="handles" item="handle" open="(" separator="," close=")">
+                #{handle}
+            </foreach>
+            OR LOWER(display_name) IN
+            <foreach collection="handles" item="handle" open="(" separator="," close=")">
+                #{handle}
+            </foreach>
+          )
+    </select>
+
+    <insert id="insert" parameterType="com.studyforge.system.entity.User" useGeneratedKeys="true" keyProperty="userId">
+        INSERT INTO users (
+            username,
+            display_name,
+            email,
+            password_hash,
+            role,
+            status,
+            bio,
+            avatar_url,
+            banner_url,
+            community_level,
+            experience_points,
+            last_login_reward_date,
+            reputation_score
+        )
+        VALUES (
+            #{username},
+            #{displayName},
+            #{email},
+            #{passwordHash},
+            #{role},
+            #{status},
+            #{bio},
+            #{avatarUrl},
+            #{bannerUrl},
+            COALESCE(#{communityLevel}, 1),
+            COALESCE(#{experiencePoints}, 0),
+            #{lastLoginRewardDate},
+            #{reputationScore}
+        )
+    </insert>
+
+    <update id="updateById" parameterType="com.studyforge.system.entity.User">
+        UPDATE users
+        SET
+            username = #{username},
+            email = #{email},
+            role = #{role},
+            status = #{status},
+            display_name = #{displayName},
+            bio = #{bio},
+            avatar_url = #{avatarUrl},
+            banner_url = #{bannerUrl},
+            community_level = #{communityLevel},
+            experience_points = #{experiencePoints},
+            last_login_reward_date = #{lastLoginRewardDate},
+            reputation_score = #{reputationScore}
+        WHERE user_id = #{userId}
+    </update>
+
+    <update id="updatePassword">
+        UPDATE users
+        SET password_hash = #{passwordHash}
+        WHERE user_id = #{userId}
+    </update>
+
+    <update id="rewardDailyLogin">
+        UPDATE users
+        SET
+            community_level = LEAST(99, FLOOR((experience_points + #{experienceDelta}) / 100) + 1),
+            experience_points = experience_points + #{experienceDelta},
+            last_login_reward_date = #{rewardDate}
+        WHERE user_id = #{userId}
+          AND (last_login_reward_date IS NULL OR last_login_reward_date &lt;&gt; #{rewardDate})
+    </update>
+</mapper>

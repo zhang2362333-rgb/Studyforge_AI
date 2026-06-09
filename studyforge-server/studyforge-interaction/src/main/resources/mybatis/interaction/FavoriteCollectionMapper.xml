@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.studyforge.interaction.mapper.FavoriteCollectionMapper">
+    <resultMap id="FavoriteCollectionResultMap" type="com.studyforge.interaction.entity.FavoriteCollection">
+        <id column="collection_id" property="collectionId"/>
+        <result column="user_id" property="userId"/>
+        <result column="name" property="name"/>
+        <result column="description" property="description"/>
+        <result column="visibility" property="visibility"/>
+        <result column="sort_no" property="sortNo"/>
+        <result column="item_count" property="itemCount"/>
+        <result column="created_time" property="createdTime"/>
+        <result column="updated_time" property="updatedTime"/>
+    </resultMap>
+
+    <sql id="CollectionColumnsWithCount">
+        fc.collection_id,
+        fc.user_id,
+        fc.name,
+        fc.description,
+        fc.visibility,
+        fc.sort_no,
+        fc.created_time,
+        fc.updated_time,
+        (
+            SELECT COUNT(*)
+            FROM favorite_collection_items i
+            WHERE i.collection_id = fc.collection_id
+        ) AS item_count
+    </sql>
+
+    <select id="selectById" resultMap="FavoriteCollectionResultMap">
+        SELECT
+        <include refid="CollectionColumnsWithCount"/>
+        FROM favorite_collections fc
+        WHERE fc.collection_id = #{collectionId}
+    </select>
+
+    <select id="selectDefaultByUser" resultMap="FavoriteCollectionResultMap">
+        SELECT
+        <include refid="CollectionColumnsWithCount"/>
+        FROM favorite_collections fc
+        WHERE fc.user_id = #{userId}
+          AND fc.name = '默认收藏'
+        LIMIT 1
+    </select>
+
+    <select id="selectByUser" resultMap="FavoriteCollectionResultMap">
+        SELECT
+        <include refid="CollectionColumnsWithCount"/>
+        FROM favorite_collections fc
+        WHERE fc.user_id = #{userId}
+        ORDER BY fc.sort_no, fc.created_time DESC
+    </select>
+
+    <insert id="insert" parameterType="com.studyforge.interaction.entity.FavoriteCollection" useGeneratedKeys="true" keyProperty="collectionId">
+        INSERT INTO favorite_collections (
+            user_id,
+            name,
+            description,
+            visibility,
+            sort_no
+        )
+        VALUES (
+            #{userId},
+            #{name},
+            #{description},
+            #{visibility},
+            COALESCE(#{sortNo}, 100)
+        )
+    </insert>
+
+    <insert id="insertIgnoreDefault">
+        INSERT IGNORE INTO favorite_collections (
+            user_id,
+            name,
+            description,
+            visibility,
+            sort_no
+        )
+        VALUES (
+            #{userId},
+            '默认收藏',
+            '临时保存，稍后再整理。',
+            'PRIVATE',
+            0
+        )
+    </insert>
+
+    <insert id="insertIgnoreItem">
+        INSERT IGNORE INTO favorite_collection_items (
+            collection_id,
+            post_id,
+            user_id
+        )
+        VALUES (
+            #{collectionId},
+            #{postId},
+            #{userId}
+        )
+    </insert>
+
+    <delete id="deleteItem">
+        DELETE FROM favorite_collection_items
+        WHERE collection_id = #{collectionId}
+          AND post_id = #{postId}
+          AND user_id = #{userId}
+    </delete>
+
+    <delete id="deleteItemsByPostAndUser">
+        DELETE FROM favorite_collection_items
+        WHERE post_id = #{postId}
+          AND user_id = #{userId}
+    </delete>
+</mapper>
